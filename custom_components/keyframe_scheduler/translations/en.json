@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Keyframe Scheduler",
+        "description": "Create a new Keyframe Scheduler instance",
+        "data": {
+          "name": "Instance name"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Schedule & Hardware",
+        "description": "Upload JSON file from webapp or paste manually",
+        "data": {
+          "schedule_file": "Upload JSON File",
+          "schedule_json": "Or paste JSON manually",
+          "hardware_type": "Hardware Type",
+          "custom_max_transition": "Custom Max Transition (seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_json": "Invalid JSON format - check the file content",
+      "invalid_schedule": "Invalid schedule data - check keyframes",
+      "invalid_file": "Could not read file - please try manual paste"
+    }
+  }
+}

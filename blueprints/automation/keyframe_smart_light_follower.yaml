@@ -1,0 +1,379 @@
+blueprint:
+  name: "PICOlightnode: Keyframe Scheduler Follower v4.0"
+  description: |
+    🎯 KEYFRAME SCHEDULER FOLLOWER v4.0
+    
+    Applies Keyframe Scheduler outputs to a PICOlightnode target using automation override channel.
+    
+    OPTIMIZED FOR: Keyframe Scheduler Component v2.6.0+ - PICOlightnode v1.0.0+ (TC and BRIGHTNESS targets)
+    
+    NEW in v4.0: Context-Aware Manual Override Detection
+    • Detects TRUE user actions vs PICO internal updates
+    • Ignores PICO Smart Restore (context.id contains "picolightnode")
+    • Prevents false-positive manual override detection
+    • Requires PICOlightnode v2.0.18+ for Context Tracking
+    
+    Features:
+    • Light follows Keyframe Scheduler automatically
+    • Smooth sync when Follow External switch is turned ON (3s transition)
+    • Manual Override Detection → Auto-disables Follow External on manual override (context-based detection)
+    • Robust: Handles missing/unavailable sensors gracefully
+    • DIM accepts 0..100 or 0..1 (auto scaled)
+    • Reads transition_seconds from Keyframe Scheduler sensor attributes
+    
+    Pair with "Follow External Auto-Resume" blueprint for complete automation cycle.
+  
+  domain: automation
+  
+  input:
+    # === PFLICHTFELDER ===
+    scheduler_sensor:
+      name: Scheduler Instanz
+      description: |
+        Wähle den Kelvin-Sensor der Keyframe Scheduler Instanz.
+        
+        Der Sensor heißt z.B. "sensor.besprechung_target_kelvin".
+        Der Name wird automatisch extrahiert ("besprechung").
+      selector:
+        entity:
+          filter:
+            - integration: keyframe_scheduler
+              domain: sensor
+          multiple: false
+    
+    target_light:
+      name: Ziel-Lampe
+      description: Welche Lampe soll der Kurve folgen?
+      selector:
+        entity:
+          domain: light
+    
+    # === HELPER INPUTS ===
+    follow_toggle:
+      name: Follow Curve Toggle
+      description: |
+        Der Follow-Toggle Helper für diese Lampe.
+        Format: input_boolean.[light_name]_follow_curve
+        
+        Beispiel: input_boolean.besprechung_1_follow_curve
+      selector:
+        entity:
+          domain: input_boolean
+    
+    auto_resume_helper:
+      name: Auto-Resume Helper
+      description: |
+        Der Auto-Resume Timer Helper für diese Lampe.
+        Format: input_number.[light_name]_auto_resume_min
+        
+        Beispiel: input_number.besprechung_1_auto_resume_min
+      selector:
+        entity:
+          domain: input_number
+    
+    last_manual_helper:
+      name: Last Manual Change Helper
+      description: |
+        Der Timestamp Helper für letzte manuelle Änderung.
+        Format: input_datetime.[light_name]_last_manual
+        
+        Beispiel: input_datetime.besprechung_1_last_manual
+      selector:
+        entity:
+          domain: input_datetime
+    
+    notifications_helper:
+      name: Notifications Toggle
+      description: |
+        Der Notifications Helper für diese Lampe.
+        Format: input_boolean.[light_name]_notify_enabled
+        
+        Beispiel: input_boolean.besprechung_1_notify_enabled
+      selector:
+        entity:
+          domain: input_boolean
+    
+    # === OPTIONALE FELDER ===
+    manual_override_detection_window:
+      name: Manual Override Erkennungs-Fenster
+      description: Wie lange nach Lichtänderung wird manuelle Änderung erkannt? (Sekunden)
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 30
+          unit_of_measurement: s
+    
+    sync_on_enable:
+      name: Sofort synchronisieren bei Enable
+      description: Wenn Follow aktiviert wird, sofort zu Kurven-Werten springen?
+      default: true
+      selector:
+        boolean:
+
+variables:
+  scheduler_sensor_input: !input scheduler_sensor
+  # Extrahiere Instance Name aus Sensor (z.B. "sensor.besprechung_target_kelvin" → "besprechung")
+  instance: "{{ scheduler_sensor_input.replace('sensor.', '').replace('_target_kelvin', '').replace('_target_brightness', '').replace('_target_mired', '').replace('_next_change', '') }}"
+  light_entity: !input target_light
+  light_name: "{{ light_entity.split('.')[1] }}"
+  override_window: !input manual_override_detection_window
+  sync_enable: !input sync_on_enable
+  
+  # Helper Entity IDs (from inputs) - Direkt für Actions
+  follow_toggle: !input follow_toggle
+  auto_resume_timer: !input auto_resume_helper
+  last_manual_change: !input last_manual_helper
+  notify_enabled: !input notifications_helper
+  
+  # String-Versionen für Templates in Conditions
+  follow_toggle_id: "{{ follow_toggle }}"
+  auto_resume_timer_id: "{{ auto_resume_timer }}"
+  last_manual_change_id: "{{ last_manual_change }}"
+  notify_enabled_id: "{{ notify_enabled }}"
+  
+  # Scheduler Sensor Entity IDs
+  kelvin_sensor: "sensor.{{ instance }}_target_kelvin"
+  brightness_sensor: "sensor.{{ instance }}_target_brightness"
+  next_change_sensor: "sensor.{{ instance }}_next_change"
+
+trigger:
+  # Trigger 1: Scheduler aktualisiert
+  - platform: state
+    entity_id: !input scheduler_sensor
+    id: scheduler_update
+  
+  # Trigger 2: Brightness manuell geändert
+  - platform: state
+    entity_id: !input target_light
+    attribute: brightness
+    id: manual_brightness
+  
+  # Trigger 3: Color Temp manuell geändert  
+  - platform: state
+    entity_id: !input target_light
+    attribute: color_temp
+    id: manual_color
+  
+  # Trigger 4: Follow Toggle aktiviert
+  - platform: state
+    entity_id: !input follow_toggle
+    to: "on"
+    id: follow_enabled
+  
+  # Trigger 5: Auto-Resume Timer Check (jede Minute)
+  - platform: time_pattern
+    minutes: "*"
+    id: auto_resume_check
+
+condition: []
+
+action:
+  - choose:
+      # ============================================================
+      # CASE 1: Scheduler Update → Apply to Light
+      # ============================================================
+      - conditions:
+          - condition: trigger
+            id: scheduler_update
+          
+          # Nur wenn Follow = ON
+          - condition: template
+            value_template: "{{ is_state(follow_toggle_id, 'on') }}"
+          
+          # Nur updaten wenn:
+          # - Transition > 0 (aktive Transition läuft) ODER
+          # - Werte haben sich signifikant geändert
+          - condition: template
+            value_template: >
+              {% set trans_sec = state_attr(kelvin_sensor, 'transition_seconds') | int(0) %}
+              {% set new_kelvin = states(kelvin_sensor) | int %}
+              {% set new_brightness = states(brightness_sensor) | float %}
+              {% set old_kelvin = state_attr(light_entity, 'color_temp_kelvin') | int(0) %}
+              {% set old_brightness = (state_attr(light_entity, 'brightness') | float(0) / 255 * 100) | round(1) %}
+              
+              {# Thresholds for noticeable changes on common lighting systems #}
+              {% set kelvin_threshold = 50 %}      {# ~15 mired difference #}
+              {% set brightness_threshold = 1 %}   {# 1% change #}
+              
+              {# Update if transition is active OR values changed significantly #}
+              {{ trans_sec > 0 or 
+                 (new_kelvin - old_kelvin) | abs >= kelvin_threshold or 
+                 (new_brightness - old_brightness) | abs >= brightness_threshold }}
+        
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              color_temp_kelvin: "{{ states(kelvin_sensor) | int }}"
+              brightness_pct: "{{ states(brightness_sensor) | float }}"
+              transition: "{{ state_attr(kelvin_sensor, 'transition_seconds') | int }}"
+      
+      # ============================================================
+      # CASE 2: Manual Override erkannt → Disable Follow
+      # ============================================================
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: manual_brightness
+              - condition: trigger
+                id: manual_color
+          
+          # Nur wenn Follow aktuell ON ist
+          - condition: template
+            value_template: "{{ is_state(follow_toggle_id, 'on') }}"
+          
+          # Nicht wenn Licht gerade aus ist
+          - condition: state
+            entity_id: !input target_light
+            state: "on"
+          
+          # Context-Aware Manual Override Detection
+          # Detects TRUE user actions vs automation/integration updates
+          # 
+          # Detection Logic:
+          # ✅ Manual Override = User clicked in Dashboard/App
+          #    - has user_id (user clicked)
+          #    - NO parent_id (not from automation)
+          #    - NO picolightnode context (not from PICO internal logic)
+          # 
+          # ❌ NOT Manual Override:
+          #    - Automation actions (has parent_id)
+          #    - PICO Smart Restore (context.id contains "picolightnode")
+          #    - PICO MQTT updates (context.id contains "picolightnode")
+          - condition: template
+            value_template: >
+              {% set has_user = trigger.to_state.context.user_id is not none %}
+              {% set has_parent = trigger.to_state.context.parent_id is not none %}
+              {% set context_id = trigger.to_state.context.id | default('') %}
+              {% set from_pico = 'picolightnode' in context_id %}
+              {{ has_user and not has_parent and not from_pico }}
+        
+        sequence:
+          # Disable Follow
+          - service: input_boolean.turn_off
+            target:
+              entity_id: !input follow_toggle
+          
+          # Timestamp setzen
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: !input last_manual_helper
+            data:
+              timestamp: "{{ now().timestamp() }}"
+          
+          # Optional: Notification
+          - if:
+              - condition: template
+                value_template: "{{ states(notify_enabled_id) == 'on' if notify_enabled_id in states else false }}"
+            then:
+              - service: persistent_notification.create
+                data:
+                  title: "🔧 Manueller Override"
+                  message: |
+                    **{{ state_attr(light_entity, 'friendly_name') }}** folgt nicht mehr der Kurve.
+                    
+                    {% set resume_min = states(auto_resume_timer_id) | int if auto_resume_timer_id in states else 0 %}
+                    {% if resume_min > 0 %}
+                    ⏱️ Auto-Resume in {{ resume_min }} Minuten.
+                    {% else %}
+                    ℹ️ Manuell wieder aktivieren mit dem Toggle.
+                    {% endif %}
+                  notification_id: "keyframe_override_{{ light_name }}"
+      
+      # ============================================================
+      # CASE 3: Follow Toggle aktiviert → Sync zu Kurve
+      # ============================================================
+      - conditions:
+          - condition: trigger
+            id: follow_enabled
+          
+          - condition: template
+            value_template: "{{ sync_enable }}"
+          
+          # Nur wenn Follow = ON
+          - condition: template
+            value_template: "{{ is_state(follow_toggle_id, 'on') }}"
+        
+        sequence:
+          # Licht einschalten und zu aktuellen Kurven-Werten springen
+          - service: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              color_temp_kelvin: "{{ states(kelvin_sensor) | int }}"
+              brightness_pct: "{{ states(brightness_sensor) | float }}"
+              transition: 1  # Schneller Sprung
+          
+          # Optional: Notification
+          - if:
+              - condition: template
+                value_template: "{{ states(notify_enabled_id) == 'on' if notify_enabled_id in states else false }}"
+            then:
+              - service: persistent_notification.dismiss
+                data:
+                  notification_id: "keyframe_override_{{ light_name }}"
+              
+              - service: persistent_notification.create
+                data:
+                  title: "✅ Kurve folgen aktiviert"
+                  message: |
+                    **{{ state_attr(light_entity, 'friendly_name') }}** folgt jetzt wieder der Kurve.
+                    
+                    📊 Aktuelle Werte:
+                    • Kelvin: {{ states(kelvin_sensor) }}K
+                    • Helligkeit: {{ states(brightness_sensor) }}%
+                    • Nächste Änderung: {{ as_timestamp(states(next_change_sensor)) | timestamp_custom('%H:%M') }}
+                  notification_id: "keyframe_resume_{{ light_name }}"
+      
+      # ============================================================
+      # CASE 4: Auto-Resume Check
+      # ============================================================
+      - conditions:
+          - condition: trigger
+            id: auto_resume_check
+          
+          # Follow ist aktuell OFF
+          - condition: template
+            value_template: "{{ is_state(follow_toggle_id, 'off') }}"
+          
+          # Auto-Resume ist konfiguriert (> 0)
+          - condition: template
+            value_template: >
+              {{ states(auto_resume_timer_id) | float(0) > 0 }}
+        
+        sequence:
+          # Prüfe ob genug Zeit vergangen ist
+          - if:
+              - condition: template
+                value_template: >
+                  {% set last_state = states(last_manual_change_id) %}
+                  {% set last_ts = as_timestamp(last_state, 0) %}
+                  {% set now_ts = now().timestamp() %}
+                  {% set minutes = (now_ts - last_ts) / 60 %}
+                  {% set resume_min = states(auto_resume_timer_id) | float(0) %}
+                  {{ last_ts > 0 and minutes >= resume_min }}
+            then:
+              # Enable Follow wieder
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: !input follow_toggle
+              
+              # Optional: Notification
+              - if:
+                  - condition: template
+                    value_template: "{{ states(notify_enabled_id) == 'on' if notify_enabled_id in states else false }}"
+                then:
+                  - service: persistent_notification.create
+                    data:
+                      title: "⏰ Auto-Resume"
+                      message: |
+                        **{{ state_attr(light_entity, 'friendly_name') }}** folgt jetzt automatisch wieder der Kurve.
+                        
+                        ⏱️ {{ states(auto_resume_timer_id) }} Minuten sind vergangen.
+                      notification_id: "keyframe_resume_{{ light_name }}"
+
+mode: restart
+max_exceeded: silent

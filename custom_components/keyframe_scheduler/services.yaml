@@ -1,0 +1,37 @@
+set_schedule:
+  name: Set schedule
+  description: Update the schedule for a Keyframe Scheduler instance
+  fields:
+    entry_id:
+      name: Entry ID
+      description: The config entry ID of the scheduler instance
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+    schedule:
+      name: Schedule JSON
+      description: The schedule as a JSON string or dict
+      required: true
+      example: '{"version": 1, "timezone": "Europe/Berlin", "stepMinutes": 5, "wrapAround": true, "keyframes": [...]}'
+      selector:
+        object:
+
+upload_from_file:
+  name: Upload schedule from file
+  description: Upload a JSON schedule file from the file system (e.g., /config/schedules/my-schedule.json)
+  fields:
+    entry_id:
+      name: Entry ID
+      description: The config entry ID (find in sensor attributes - state_attr('sensor.INSTANCE_target_kelvin', 'entry_id'))
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+    file_path:
+      name: File Path
+      description: Full path to JSON file in /config/ directory
+      required: true
+      example: "/config/schedules/living-room.json"
+      selector:
+        text:
