@@ -1,3 +1,5 @@
+# blueprint_version: 1.0
+# changelog: https://github.com/mjmijh/keyframe-scheduler/blob/main/CHANGELOG.md
 blueprint:
   name: "PICOlightnode: Keyframe Scheduler Follower v4.0"
   description: |
