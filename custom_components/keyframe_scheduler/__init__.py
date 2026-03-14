@@ -557,10 +557,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.services.async_register(DOMAIN, SERVICE_SET_SCHEDULE, handle_set_schedule)
         hass.services.async_register(DOMAIN, SERVICE_UPLOAD_FROM_FILE, handle_upload_from_file)
 
+    # Reload when options change (e.g. follow_lights list updated)
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
     # Forward to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload integration when options are changed."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -4,7 +4,9 @@ from homeassistant.const import Platform
 
 DOMAIN = "keyframe_scheduler"
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.SWITCH]
+
+CONF_FOLLOW_LIGHTS = "follow_lights"
 
 # Storage
 STORE_VERSION = 1

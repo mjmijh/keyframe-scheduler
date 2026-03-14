@@ -13,7 +13,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from .const import DOMAIN
+from .const import CONF_FOLLOW_LIGHTS, DOMAIN
 from .scheduler import spec_from_dict
 
 _LOGGER = logging.getLogger(__name__)
@@ -118,24 +118,26 @@ class KeyframeSchedulerOptionsFlow(config_entries.OptionsFlow):
                 
                 options = {
                     "max_transition_seconds": max_transition,
+                    CONF_FOLLOW_LIGHTS: user_input.get(CONF_FOLLOW_LIGHTS, []),
                 }
-                
+
                 if self._uploaded_schedule:
                     options["schedule_json"] = self._uploaded_schedule
-                
+
                 return self.async_create_entry(title="", data=options)
 
         # Get current values
         current_schedule = self._entry.options.get("schedule_json", "")
         current_max_transition = self._entry.options.get("max_transition_seconds", 300)
-        
+        current_follow_lights = self._entry.options.get(CONF_FOLLOW_LIGHTS, [])
+
         # Determine current hardware
         current_hardware = "generic"
         for hw_type, limit in HARDWARE_LIMITS.items():
             if limit == current_max_transition:
                 current_hardware = hw_type
                 break
-        
+
         if current_max_transition not in HARDWARE_LIMITS.values():
             current_hardware = "custom"
 
@@ -177,6 +179,15 @@ class KeyframeSchedulerOptionsFlow(config_entries.OptionsFlow):
                         max=3600,
                         mode=selector.NumberSelectorMode.BOX,
                         unit_of_measurement="seconds",
+                    )
+                ),
+                vol.Optional(
+                    CONF_FOLLOW_LIGHTS,
+                    default=current_follow_lights,
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="light",
+                        multiple=True,
                     )
                 ),
             }
