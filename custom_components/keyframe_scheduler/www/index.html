@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Keyframe Scheduler: Kelvin + Dimmer (48h)</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
+    h1 { margin: 0 0 10px; font-size: 20px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    .card { border: 1px solid rgba(128,128,128,.35); border-radius: 12px; padding: 12px; margin: 12px 0; }
+    label { display: block; font-size: 12px; opacity: .85; margin-bottom: 4px; }
+    input, select, button, textarea { font: inherit; padding: 6px 8px; border-radius: 10px; border: 1px solid rgba(128,128,128,.35); }
+    button { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid rgba(128,128,128,.25); padding: 8px 6px; vertical-align: middle; }
+    th { text-align: left; font-size: 12px; opacity: .8; }
+    .small { font-size: 12px; opacity: .8; }
+    .danger { color: #b00020; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    canvas { width: 100%; max-height: 520px; }
+    .pill { display: inline-block; padding: 2px 8px; border: 1px solid rgba(128,128,128,.35); border-radius: 999px; font-size: 12px; opacity: .9; }
+    .hint { max-width: 980px; line-height: 1.4; }
+  
+    .handle { cursor: grab; user-select: none; font-size: 16px; padding: 0 6px; }
+    tr.dragging { opacity: 0.5; }
+</style>
+</head>
+<body>
+  <h1>Keyframe Scheduler: Kelvin + Dimmer (48 Stunden, ≥ variabel (1–60 Min)-Schritt)</h1>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Startzeit (für Plot)</label>
+        <input id="startDateTime" type="datetime-local" />
+      </div>
+      <div>
+        <label>Zeitschritt (Minuten, min. 5)</label>
+        <input id="stepMinutes" type="number" min="1" step="1" value="5" />
+      </div>
+      <div>
+        <label>Horizont</label>
+        <select id="horizonHours">
+          <option value="48" selected>48 Stunden</option>
+          <option value="24">24 Stunden</option>
+          <option value="72">72 Stunden</option>
+        </select>
+      </div>
+      <div>
+        <label>Wrap-Around (letzter → erster)</label>
+        <select id="wrapAround">
+          <option value="yes" selected>ja</option>
+          <option value="no">nein</option>
+        </select>
+      </div>
+      <div>
+        <button id="recalcBtn">Neu berechnen</button>
+      </div>
+      <div class="small">
+        <span class="pill">Kurve: linear / sinus</span>
+        <span class="pill">Transition-Parameter gehören zum Ziel-Keyframe</span>
+      </div>
+    </div>
+
+    <div class="small hint" style="margin-top:8px;">
+      <b>Semantik:</b> Die Einstellungen in einer Zeile gehören <b>zu diesem Zeitpunkt</b> (Ziel-Keyframe B):<br>
+      • <span class="mono">offset &lt; 0</span>: Transition startet <span class="mono">|offset|</span> Minuten <i>vor</i> B, Zielwert ist <b>am Zeitpunkt B</b> erreicht.<br>
+      • <span class="mono">offset &gt; 0</span>: Transition startet <b>am Zeitpunkt B</b>, Zielwert ist <span class="mono">offset</span> Minuten <i>nach</i> B erreicht.<br>
+      • <span class="mono">offset = 0</span>: harter Sprung am Zeitpunkt B.<br>
+      Alternative: <b>KF→KF</b> ignoriert Offset und interpoliert über das ganze Intervall vom vorherigen Keyframe bis B.<br>Bei <b>Überschneidungen</b> gewinnt standardmäßig der <b>frühere Eintrag in der Tabelle</b> (Keyframe #1 hat höchste Priorität).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Preset</label>
+        <select id="preset">
+          <option value="example" selected>Beispiel (06:00/08:00/20:00/23:00)</option>
+          <option value="two">2 Keyframes (06:00/23:00)</option>
+          <option value="empty">Leer</option>
+        </select>
+      </div>
+      <div>
+        <button id="loadPresetBtn">Preset laden</button>
+      </div>
+      <div class="small">
+        Tipp: Wenn der Wert um 23:00 erreicht sein soll, setze beim 23:00-Keyframe z.B. <span class="mono">offset=-30</span>.
+      </div>
+    </div>
+
+    <div style="overflow:auto; margin-top:10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th></th>
+            <th>Zeit (HH:MM)</th>
+            <th>Kelvin</th>
+            <th>Dim (%)</th>
+            <th>Kurve</th>
+            <th>Übergang</th>
+            <th>Offset (h:m:s)</th>
+            <th>Fadezeit (s)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="kfBody"></tbody>
+      </table>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <button id="addRowBtn">+ Keyframe</button>
+      <button id="sortBtn">Nach Zeit sortieren</button>
+      <button id="pdfBtn">PDF Export</button>
+      <span id="msg" class="small"></span>
+    </div>
+
+    <details style="margin-top:10px;">
+      <summary class="small">Keyframes als JSON (Import/Export)</summary>
+      <div class="row" style="margin-top:8px;">
+        <textarea id="jsonBox" rows="7" style="width:100%;" class="mono"></textarea>
+      </div>
+      
+      <div class="row">
+        <button id="exportJsonBtn">Text laden</button>
+        <button id="importJsonBtn">Text anwenden</button>
+        <button id="downloadKeyframesBtn">Datei speichern (.json)</button>
+        <button id="importKeyframesFileBtn">Datei laden (.json)</button>
+        <input id="keyframesFileInput" type="file" accept="application/json" style="display:none;">
+      </div>
+      <div class="small">Format: Array von Objekten: <span class="mono">time, kelvin, dim, curve, mode, offsetMin</span></div>
+    
+      </details>
+    <details style="margin-top:10px;">
+      <summary class="small">Home Assistant JSON (Spec v1, Export)</summary>
+      <div class="row" style="margin-top:8px;">
+        <textarea id="haBox" rows="9" style="width:100%;" class="mono" placeholder='{"version":1,...}'></textarea>
+      </div>
+      <div class="row">
+        <button id="exportHaJsonBtn">HA JSON erzeugen</button>
+        <button id="importHaJsonBtn">HA JSON anwenden</button>
+        <button id="downloadHaJsonBtn">Datei speichern (.json)</button>
+      </div>
+    </details>
+
+  </div>
+
+  <div class="card">
+    <canvas id="chart"></canvas>
+    <div class="small" id="stats"></div>
+    <div class="small danger" id="errors"></div>
+
+    <details style="margin-top:10px;">
+      <summary class="small">Debug: Werte um 23:00 (Preset „2 Keyframes“)</summary>
+      <div class="small mono" id="debugBox" style="white-space:pre; margin-top:8px;"></div>
+    </details>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    // ---------------- Utils ----------------
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const pad2 = (n) => String(n).padStart(2, "0");
+
+    function parseHHMM(s) {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(String(s).trim());
+      if (!m) return null;
+      const hh = Number(m[1]), mm = Number(m[2]);
+      if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+      return hh * 60 + mm;
+    }
+
+    function easeSinus(u) {
+      return (1 - Math.cos(Math.PI * clamp(u, 0, 1))) / 2;
+    }
+
+    function lerp(a, b, u) {
+      return a + (b - a) * u;
+    }
+
+    function interpValue(curve, u) {
+      return (curve === "sinus") ? easeSinus(u) : clamp(u, 0, 1);
+    }
+
+    // ---------------- Presets ----------------
+    function presetExample() {
+      return [
+        { time: "06:00", kelvin: 4000, dim: 80,  curve: "sinus",  mode: "offset", offsetMin: -15 },
+        { time: "08:00", kelvin: 5000, dim: 100, curve: "sinus",  mode: "full",   offsetMin: 0   },
+        { time: "20:00", kelvin: 3500, dim: 70,  curve: "linear", mode: "offset", offsetMin: -20 },
+        { time: "23:00", kelvin: 2700, dim: 20,  curve: "linear", mode: "offset", offsetMin: +30 },
+      ];
+    }
+
+    function presetTwo() {
+      return [
+        { time: "06:00", kelvin: 4000, dim: 80, curve: "linear", mode: "offset", offsetMin: -30 },
+        { time: "23:00", kelvin: 2700, dim: 20, curve: "linear", mode: "offset", offsetMin: +30 },
+      ];
+    }
+
+    // ---------------- UI ----------------
+    const kfBody = document.getElementById("kfBody");
+    const msg = document.getElementById("msg");
+    const errorsEl = document.getElementById("errors");
+    const statsEl = document.getElementById("stats");
+    const jsonBox = document.getElementById("jsonBox");
+
+
+    // --- Drag & Drop Reordering (row order = priority) ---
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll("tr:not(.dragging)")];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - (box.top + box.height / 2);
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+
+    kfBody.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const dragging = kfBody.querySelector("tr.dragging");
+      if (!dragging) return;
+      const afterEl = getDragAfterElement(kfBody, e.clientY);
+      if (afterEl == null) {
+        kfBody.appendChild(dragging);
+      } else {
+        kfBody.insertBefore(dragging, afterEl);
+      }
+    });
+
+    kfBody.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const dragging = kfBody.querySelector("tr.dragging");
+      if (dragging) dragging.classList.remove("dragging");
+      renumber();
+      recalcAndRender();
+      exportHaJsonToBox();
+    });
+
+
+    function renumber() {
+      [...kfBody.querySelectorAll("tr")].forEach((tr, i) => tr.querySelector(".idx").textContent = String(i + 1));
+    }
+
+    function addRow(kf) {
+      const tr = document.createElement("tr");
+      tr.draggable = true;
+      
+      const _sec = Math.round((kf.offsetMin || 0) * 60);
+      const _sign = _sec < 0 ? -1 : 1;
+      const _abs = Math.abs(_sec);
+      const offsetH = Math.floor(_abs / 3600) * _sign;
+      const offsetM = Math.floor((_abs % 3600) / 60);
+      const offsetS = Math.floor(_abs % 60);
+
+      const _stepMin = Number(document.getElementById("stepMinutes")?.value || 5) || 5;
+      const fadeSeconds = (kf.fadeSeconds != null && Number.isFinite(Number(kf.fadeSeconds)))
+        ? Math.max(0, Math.round(Number(kf.fadeSeconds)))
+        : Math.max(0, Math.round(_stepMin * 60));
+
+tr.innerHTML = `
+        <td class="mono idx"></td><td class="handle" title="Ziehen zum Umsortieren" aria-label="Ziehen zum Umsortieren">⋮⋮</td>
+        <td><input class="time" type="text" value="${kf.time ?? "06:00"}" placeholder="HH:MM" style="width:80px;"></td>
+        <td><input class="kelvin" type="number" min="1000" max="10000" step="50" value="${kf.kelvin ?? 4000}" style="width:90px;"></td>
+        <td><input class="dim" type="number" min="0" max="100" step="1" value="${kf.dim ?? 80}" style="width:70px;"></td>
+        <td>
+          <select class="curve">
+            <option value="linear" ${kf.curve === "linear" ? "selected" : ""}>linear</option>
+            <option value="sinus" ${kf.curve === "sinus" ? "selected" : ""}>sinus</option>
+          </select>
+        </td>
+        <td>
+          <select class="mode">
+            <option value="offset" ${kf.mode === "offset" ? "selected" : ""}>Offset</option>
+            <option value="full" ${kf.mode === "full" ? "selected" : ""}>KF→KF</option>
+          </select>
+        </td>
+        <td style="white-space:nowrap;"><input class="offsetH" type="number" style="width:60px" value="${offsetH}"> <input class="offsetM" type="number" min="0" max="59" style="width:60px" value="${offsetM}"> <input class="offsetS" type="number" min="0" max="59" style="width:60px" value="${offsetS}"></td><td><input class="fadeSec" type="number" min="0" step="1" style="width:90px" title="Fadezeit in Sekunden (für HA)" value="${fadeSeconds}"></td>
+        <td><button class="delBtn">✕</button></td>
+      `;
+
+      // Drag behavior: only start dragging when grabbing the handle
+      const handle = tr.querySelector(".handle");
+      handle.addEventListener("mousedown", () => { handle.style.cursor = "grabbing"; });
+      handle.addEventListener("mouseup", () => { handle.style.cursor = "grab"; });
+
+      tr.addEventListener("dragstart", (e) => {
+        // Some browsers require setting data
+        e.dataTransfer.setData("text/plain", "row");
+        tr.classList.add("dragging");
+      });
+      tr.addEventListener("dragend", () => {
+        tr.classList.remove("dragging");
+        handle.style.cursor = "grab";
+      });
+
+      // Prevent dragging when starting from inputs/selects (keep UX sane)
+      tr.querySelectorAll("input,select,button").forEach(el => {
+        el.addEventListener("dragstart", (ev) => ev.preventDefault());
+      });
+      // Require handle to initiate drag
+      tr.addEventListener("mousedown", (ev) => {
+        if (!ev.target.classList.contains("handle")) {
+          tr.draggable = false;
+        } else {
+          tr.draggable = true;
+        }
+      });
+      tr.addEventListener("mouseup", () => { tr.draggable = true; });
+
+      const modeSel = tr.querySelector(".mode");
+      const offsetHIn=tr.querySelector(".offsetH"),offsetMIn=tr.querySelector(".offsetM"),offsetSIn=tr.querySelector(".offsetS");
+      function updateDisable() { offsetHIn.disabled=offsetMIn.disabled=offsetSIn.disabled=(modeSel.value==="full"); }
+      modeSel.addEventListener("change", () => { updateDisable(); recalcAndRender(); });
+      updateDisable();
+
+      tr.querySelector(".delBtn").addEventListener("click", () => {
+        tr.remove();
+        renumber();
+        recalcAndRender();
+      });
+
+      tr.querySelectorAll("input,select").forEach(el => el.addEventListener("change", recalcAndRender));
+
+      kfBody.appendChild(tr);
+    }
+
+    function getKeyframesFromUI() {
+      const rows = [...kfBody.querySelectorAll("tr")];
+      return rows.map((tr, idx) => ({
+        __prio: idx,
+        time: tr.querySelector(".time").value.trim(),
+        kelvin: Number(tr.querySelector(".kelvin").value),
+        dim: Number(tr.querySelector(".dim").value),
+        curve: tr.querySelector(".curve").value,
+        mode: tr.querySelector(".mode").value,
+        offsetMin:(function(){
+        const h=Number(tr.querySelector(".offsetH").value||0);
+        const m=Number(tr.querySelector(".offsetM").value||0);
+        const s=Number(tr.querySelector(".offsetS").value||0);
+        const sign=(h<0||m<0||s<0)?-1:1;
+        return (Math.abs(h)*3600+Math.abs(m)*60+Math.abs(s))*sign/60;
+      })(),
+          fadeSeconds: (function(){
+            const step = Number(document.getElementById("stepMinutes")?.value || 5) || 5;
+            const v = Number(tr.querySelector(".fadeSec")?.value);
+            return Number.isFinite(v) ? Math.max(0, Math.round(v)) : Math.max(0, Math.round(step*60));
+          })(),
+      }));
+    }
+
+    function setKeyframesToUI(kfs) {
+      kfBody.innerHTML = "";
+      kfs.forEach(addRow);
+      renumber();
+      recalcAndRender();
+    }
+
+    function sortKeyframesByTime() {
+      const kfs = getKeyframesFromUI();
+      kfs.sort((a, b) => (parseHHMM(a.time) ?? 0) - (parseHHMM(b.time) ?? 0));
+      setKeyframesToUI(kfs);
+      msg.textContent = "Sortiert.";
+      setTimeout(() => msg.textContent = "", 1200);
+    }
+
+    // ---------------- Validation & schedule ----------------
+    function validateKeyframes(kfs) {
+      const errs = [];
+      if (kfs.length < 2) errs.push("Mindestens 2 Keyframes benötigt.");
+      const seen = new Set();
+      kfs.forEach((kf, i) => {
+        const t = parseHHMM(kf.time);
+        if (t === null) errs.push(`Keyframe #${i+1}: ungültige Zeit "${kf.time}"`);
+        else {
+          if (seen.has(t)) errs.push("Doppelte Zeitpunkte sind nicht erlaubt (gleiche HH:MM).");
+          seen.add(t);
+        }
+        if (!Number.isFinite(kf.kelvin) || kf.kelvin < 1000 || kf.kelvin > 10000) errs.push(`Keyframe #${i+1}: Kelvin ungültig (1000..10000)`);
+        if (!Number.isFinite(kf.dim) || kf.dim < 0 || kf.dim > 100) errs.push(`Keyframe #${i+1}: Dim ungültig (0..100)`);
+        if (!["linear","sinus"].includes(kf.curve)) errs.push(`Keyframe #${i+1}: Kurve ungültig`);
+        if (!["offset","full"].includes(kf.mode)) errs.push(`Keyframe #${i+1}: Übergang ungültig`);
+        if (kf.mode === "offset" && !Number.isFinite(kf.offsetMin)) errs.push(`Keyframe #${i+1}: Offset ungültig`);
+      });
+      return errs;
+    }
+
+    function buildDailyTimelineKeyframes(kfs) {
+      return kfs.map(k => ({ ...k, tMin: parseHHMM(k.time) })).sort((a,b) => a.tMin - b.tMin);
+    }
+
+    // Build an absolute (multi-day) schedule so midnight crossings are boring again.
+    // All times are in "minutes since startDate".
+    function buildAbsSchedule(kfsSorted, startDate, horizonMin, wrap) {
+      const dayStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
+      const startOffset = Math.round((startDate.getTime() - dayStart.getTime()) / 60000); // minutes from dayStart to startDate
+      const maxPosOffset = Math.max(...kfsSorted.map(k => (k.mode === "offset" && k.offsetMin > 0) ? k.offsetMin : 0), 0);
+      const lookahead = horizonMin + maxPosOffset + 1440; // safe extra day
+
+      const daysMin = wrap ? -1 : 0;
+      const daysMax = Math.ceil((lookahead + startOffset) / 1440) + 1;
+
+      const kfsAbs = [];
+      for (let d = daysMin; d <= daysMax; d++) {
+        for (const k of kfsSorted) {
+          kfsAbs.push({
+            ...k,
+            timeAbs: d * 1440 + k.tMin - startOffset,
+          });
+        }
+      }
+      kfsAbs.sort((a,b) => a.timeAbs - b.timeAbs);
+
+      // Build transition windows for each keyframe as TARGET (B), with its PREV (A).
+      // For "full": transition runs from A.timeAbs -> B.timeAbs.
+      // For "offset":
+      //   offset<0: [B.timeAbs+offset, B.timeAbs]
+      //   offset>0: [B.timeAbs, B.timeAbs+offset]
+      //   offset=0: instantaneous at B.timeAbs
+      const trans = [];
+      for (let i = 0; i < kfsAbs.length; i++) {
+        const B = kfsAbs[i];
+        const A = (i > 0) ? kfsAbs[i-1] : null;
+        if (!A) continue;
+
+        let tStart, tEnd, mode = B.mode;
+
+        if (mode === "full") {
+          tStart = A.timeAbs;
+          tEnd = B.timeAbs;
+          if (tEnd < tStart) continue;
+          trans.push({ A, B, tStart, tEnd, kind: "full" });
+          continue;
+        }
+
+        const o = Number.isFinite(B.offsetMin) ? B.offsetMin : 0;
+        if (o < 0) { tStart = B.timeAbs + o; tEnd = B.timeAbs; }
+        else if (o > 0) { tStart = B.timeAbs; tEnd = B.timeAbs + o; }
+        else { tStart = B.timeAbs; tEnd = B.timeAbs; }
+
+        trans.push({ A, B, tStart, tEnd, kind: "offset" });
+      }
+
+      // Reach time of B (when B is "fully active")
+      function reachTime(B) {
+        if (B.mode === "full") return B.timeAbs;
+        if (B.mode === "offset" && Number.isFinite(B.offsetMin) && B.offsetMin > 0) return B.timeAbs + B.offsetMin;
+        return B.timeAbs;
+      }
+
+      // Precompute reach times list for fast lookup
+      const reach = kfsAbs.map(B => ({ t: reachTime(B), B })).sort((x,y) => x.t - y.t);
+
+      return { kfsAbs, trans, reach, wrap };
+    }
+
+    let SCHEDULE = null;
+
+    function valueAtMinuteAbs(m) {
+      if (!SCHEDULE) return { kelvin: 0, dim: 0 };
+      const { trans, reach } = SCHEDULE;
+
+      // 1) If inside a transition window, resolve overlaps by priority.
+      // Priority rule: smaller B.__prio wins (earlier row in the table = higher priority).
+      // If equal priority, choose the window with the earlier tEnd.
+      let best = null;
+      for (const w of trans) {
+        if (w.tStart === w.tEnd) continue; // instantaneous handled via reach logic
+        if (m >= w.tStart && m < w.tEnd) {
+          if (!best) { best = w; continue; }
+          const pBest = Number.isFinite(best.B.__prio) ? best.B.__prio : 1e9;
+          const pW = Number.isFinite(w.B.__prio) ? w.B.__prio : 1e9;
+          if (pW < pBest) { best = w; continue; }
+          if (pW === pBest && w.tEnd < best.tEnd) { best = w; continue; }
+        }
+      }
+      if (best) {
+        const { A, B, tStart, tEnd } = best;
+        const u = (m - tStart) / (tEnd - tStart);
+        const s = interpValue(B.curve, u);
+        return { kelvin: lerp(A.kelvin, B.kelvin, s), dim: lerp(A.dim, B.dim, s) };
+      }
+
+      // 2) Not in transition: return the latest reached keyframe value (max reachTime <= m)
+      let lo = 0, hi = reach.length - 1, ans = -1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (reach[mid].t <= m) { ans = mid; lo = mid + 1; }
+        else hi = mid - 1;
+      }
+      if (ans >= 0) {
+        const B = reach[ans].B;
+        return { kelvin: B.kelvin, dim: B.dim };
+      }
+
+      // 3) Before everything: fall back to the earliest keyframe's value
+      const first = reach[0]?.B;
+      return { kelvin: first ? first.kelvin : 0, dim: first ? first.dim : 0 };
+    }
+
+    // ---------------- Chart ----------------
+    let chart;
+    function renderChart(labels, kelvinArr, dimArr) {
+      const ctx = document.getElementById("chart").getContext("2d");
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: "line",
+        data: { labels, datasets: [
+          { label: "Kelvin", data: kelvinArr, yAxisID: "yK", pointRadius: 2, pointHoverRadius: 5, borderWidth: 2, tension: 0 },
+          { label: "Dim (%)", data: dimArr, yAxisID: "yD", pointRadius: 2, pointHoverRadius: 5, borderWidth: 2, tension: 0 },
+        ]},
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { display: true },
+            tooltip: { callbacks: {
+              label: (ctx) => (ctx.dataset.yAxisID === "yK")
+                ? ` Kelvin: ${Math.round(ctx.parsed.y)} K`
+                : ` Dim: ${Math.round(ctx.parsed.y)} %`
+            }}
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 12, callback: function(value) {
+              const lbl = this.getLabelForValue ? this.getLabelForValue(value) : "";
+              return String(lbl).replace(" ", "\n");
+            }}},
+            yK: { position: "left", title: { display: true, text: "Kelvin" }, suggestedMin: 2000, suggestedMax: 7000 },
+            yD: { position: "right", title: { display: true, text: "Dim (%)" }, suggestedMin: 0, suggestedMax: 100, grid: { drawOnChartArea: false } }
+          }
+        }
+      });
+    }
+
+    // ---------------- Main calc ----------------
+    function recalcAndRender() {
+      errorsEl.textContent = "";
+      statsEl.textContent = "";
+
+      const stepMin = Math.max(1, Number(document.getElementById("stepMinutes").value || 1));
+      document.getElementById("stepMinutes").value = stepMin;
+
+      const horizon = Number(document.getElementById("horizonHours").value || 48);
+      const wrap = document.getElementById("wrapAround").value === "yes";
+
+      const startDTStr = document.getElementById("startDateTime").value;
+      const startDate = startDTStr ? new Date(startDTStr) : new Date();
+      if (Number.isNaN(startDate.getTime())) { errorsEl.textContent = "Ungültige Startzeit."; return; }
+
+      const kfs = getKeyframesFromUI();
+      const errs = validateKeyframes(kfs);
+      if (errs.length) { errorsEl.innerHTML = errs.map(e => `• ${e}`).join("<br>"); return; }
+
+      const kfsSorted = buildDailyTimelineKeyframes(kfs);
+
+      const horizonMin = horizon * 60;
+      SCHEDULE = buildAbsSchedule(kfsSorted, startDate, horizonMin, wrap);
+
+      const totalMinutes = horizon * 60;
+      const labels = [];
+      const kelvinArr = [];
+      const dimArr = [];
+
+      for (let m = 0; m <= totalMinutes; m += stepMin) {
+        const dt = new Date(startDate.getTime() + m * 60000);
+        const dayOffset = Math.floor((dt - startDate) / (24 * 3600 * 1000));
+        labels.push(`D${dayOffset} ${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`);
+
+        const v = valueAtMinuteAbs(m);
+        kelvinArr.push(v.kelvin);
+        dimArr.push(v.dim);
+      }
+
+      renderChart(labels, kelvinArr, dimArr);
+
+      const minK = Math.min(...kelvinArr), maxK = Math.max(...kelvinArr);
+      const minD = Math.min(...dimArr), maxD = Math.max(...dimArr);
+      statsEl.textContent =
+        `Berechnet: ${labels.length} Punkte @ ${stepMin} min, Horizont ${horizon}h. ` +
+        `Kelvin: ${Math.round(minK)}..${Math.round(maxK)} K, Dim: ${Math.round(minD)}..${Math.round(maxD)} %.`;
+
+      jsonBox.value = JSON.stringify(getKeyframesFromUI(), null, 2);
+      // Debug block: show values from 22:30..23:30 in stepMin increments (using current keyframes)
+      const dbg = document.getElementById("debugBox");
+      if (dbg) {
+        const times = [];
+        // compute minutes from startDate to today 22:30..23:30 (same day as startDate)
+        const base = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
+        const minsFromStart = (dt) => Math.round((dt.getTime() - startDate.getTime()) / 60000);
+        const t0 = new Date(base.getTime() + (22*60 + 30) * 60000);
+        const t1 = new Date(base.getTime() + (23*60 + 30) * 60000);
+        let lines = [];
+        lines.push("Zeit\tKelvin\tDim");
+        for (let tt = new Date(t0); tt <= t1; tt = new Date(tt.getTime() + stepMin * 60000)) {
+          const m = Math.round((tt.getTime() - startDate.getTime()) / 60000);
+          const v = valueAtMinuteAbs(m);
+          lines.push(`${pad2(tt.getHours())}:${pad2(tt.getMinutes())}\t${Math.round(v.kelvin)}\t${Math.round(v.dim)}`);
+        }
+        dbg.textContent = lines.join("\n");
+      }
+
+    }
+
+    // ---------------- Buttons & init ----------------
+    document.getElementById("addRowBtn").addEventListener("click", () => {
+      addRow({ time: "12:00", kelvin: 4500, dim: 100, curve: "sinus", mode: "offset", offsetMin: -15 });
+      renumber(); recalcAndRender();
+    });
+
+    document.getElementById("sortBtn").addEventListener("click", sortKeyframesByTime);
+    document.getElementById("recalcBtn").addEventListener("click", recalcAndRender);
+
+    document.getElementById("loadPresetBtn").addEventListener("click", () => {
+      const p = document.getElementById("preset").value;
+      if (p === "empty") setKeyframesToUI([]);
+      else if (p === "two") setKeyframesToUI(presetTwo());
+      else setKeyframesToUI(presetExample());
+    });
+
+    document.getElementById("exportJsonBtn").addEventListener("click", () => {
+      jsonBox.value = JSON.stringify(getKeyframesFromUI(), null, 2);
+      // Debug block: show values from 22:30..23:30 in stepMin increments (using current keyframes)
+      const dbg = document.getElementById("debugBox");
+      if (dbg) {
+        const times = [];
+        // compute minutes from startDate to today 22:30..23:30 (same day as startDate)
+        const base = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
+        const minsFromStart = (dt) => Math.round((dt.getTime() - startDate.getTime()) / 60000);
+        const t0 = new Date(base.getTime() + (22*60 + 30) * 60000);
+        const t1 = new Date(base.getTime() + (23*60 + 30) * 60000);
+        let lines = [];
+        lines.push("Zeit\tKelvin\tDim");
+        for (let tt = new Date(t0); tt <= t1; tt = new Date(tt.getTime() + stepMin * 60000)) {
+          const m = Math.round((tt.getTime() - startDate.getTime()) / 60000);
+          const v = valueAtMinuteAbs(m);
+          lines.push(`${pad2(tt.getHours())}:${pad2(tt.getMinutes())}\t${Math.round(v.kelvin)}\t${Math.round(v.dim)}`);
+        }
+        dbg.textContent = lines.join("\n");
+      }
+
+      msg.textContent = "Exportiert in JSON-Box.";
+      setTimeout(() => msg.textContent = "", 1200);
+    });
+
+    document.getElementById("importJsonBtn").addEventListener("click", () => {
+      try {
+        const arr = JSON.parse(jsonBox.value);
+        if (!Array.isArray(arr)) throw new Error("JSON ist kein Array.");
+        setKeyframesToUI(arr);
+        msg.textContent = "Import ok.";
+        setTimeout(() => msg.textContent = "", 1200);
+      } catch (e) {
+        errorsEl.textContent = "Import-Fehler: " + e.message;
+      }
+    });
+
+    // Keyframes JSON Download/Import (file)
+    document.getElementById("downloadKeyframesBtn").addEventListener("click", () => {
+      downloadKeyframesJsonFile();
+      msg.textContent = "Keyframes JSON Download gestartet.";
+      setTimeout(() => msg.textContent = "", 1400);
+    });
+
+    const kfFileInput = document.getElementById("keyframesFileInput");
+    document.getElementById("importKeyframesFileBtn").addEventListener("click", () => {
+      kfFileInput.value = "";
+      kfFileInput.click();
+    });
+
+    kfFileInput.addEventListener("change", async () => {
+      try {
+        const file = kfFileInput.files && kfFileInput.files[0];
+        await importKeyframesJsonFile(file);
+        msg.textContent = "Keyframes aus Datei importiert.";
+        setTimeout(() => msg.textContent = "", 1600);
+      } catch (e) {
+        errorsEl.textContent = "Keyframes-Datei Import-Fehler: " + (e.message || e);
+      }
+    });
+
+
+    
+    
+    function buildHaSpec(){
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Berlin";
+      const stepMinEl = document.getElementById("stepMinutes");
+      const horizonEl = document.getElementById("horizonHours");
+      const wrapEl = document.getElementById("wrapAround");
+      const startEl = document.getElementById("startDateTime");
+
+      const stepMinutes = Math.max(1, Number(stepMinEl ? stepMinEl.value : 5) || 5);
+      const horizonHours = Number(horizonEl ? horizonEl.value : 48) || 48;
+      const wrapAround = (wrapEl ? wrapEl.value : "yes") === "yes";
+      const startDateTime = startEl ? (startEl.value || null) : null;
+
+      return{
+        version:1,
+        timezone:tz,
+        stepMinutes,
+        horizonHours,
+        wrapAround,
+        startDateTime,
+        keyframes:getKeyframesFromUI().map(k=>({
+          time:k.time,kelvin:k.kelvin,dim:k.dim,curve:k.curve,mode:k.mode,
+          offsetMin:k.offsetMin,
+          offsetSeconds:Math.round(k.offsetMin*60),
+          fadeSeconds:k.fadeSeconds
+        }))
+      };
+    }
+
+    function exportHaJsonToBox(){
+      document.getElementById("haBox").value=JSON.stringify(buildHaSpec(),null,2);
+    }
+
+
+    // --- HA JSON Import (Spec v1) ---
+    function importHaJsonFromBox(){
+      const raw = (document.getElementById("haBox").value || "").trim();
+      if(!raw){ throw new Error("haBox ist leer."); }
+      const obj = JSON.parse(raw);
+      if(Number(obj.version||1)!==1){ throw new Error("Unsupported version (erwartet 1)."); }
+
+      // Optional: apply step/horizon/wrap/start if UI elements exist
+      if (obj.stepMinutes != null && document.getElementById("stepMinutes")) {
+        document.getElementById("stepMinutes").value = String(Math.max(1, Math.min(60, Number(obj.stepMinutes)||5)));
+      }
+      if (obj.horizonHours != null && document.getElementById("horizonHours")) {
+        document.getElementById("horizonHours").value = String(Number(obj.horizonHours)||48);
+      }
+      if (obj.wrapAround != null && document.getElementById("wrapAround")) {
+        document.getElementById("wrapAround").value = obj.wrapAround ? "yes" : "no";
+      }
+      if (obj.startDateTime != null && document.getElementById("startDateTime")) {
+        document.getElementById("startDateTime").value = obj.startDateTime || "";
+      }
+
+      // Keyframes: accept offsetSeconds if present; else fall back to offsetMin if present
+      const kfs = (obj.keyframes||[]).map(k => ({
+        time: k.time,
+        kelvin: Number(k.kelvin),
+        dim: Number(k.dim),
+        curve: k.curve || "linear",
+        mode: k.mode || "offset",
+        offsetMin: (k.offsetSeconds != null) ? (Number(k.offsetSeconds)/60) : Number(k.offsetMin||0),
+        fadeSeconds: (k.fadeSeconds != null) ? Math.max(0, Math.round(Number(k.fadeSeconds))) : Math.max(0, Math.round((Number(obj.stepMinutes||5)||5)*60)),
+      }));
+
+      setKeyframesToUI(kfs); // keep incoming order as priority
+      recalcAndRender();
+      exportHaJsonToBox();
+    }
+
+    // --- LocalStorage caching ---
+    const LS_KEY = "keyframe_scheduler_v9_keyframes";
+    function saveKeyframesLocal(){
+      const payload = {
+        savedAt: new Date().toISOString(),
+        stepMinutes: document.getElementById("stepMinutes")?.value ?? null,
+        horizonHours: document.getElementById("horizonHours")?.value ?? null,
+        wrapAround: document.getElementById("wrapAround")?.value ?? null,
+        startDateTime: document.getElementById("startDateTime")?.value ?? null,
+        keyframes: getKeyframesFromUI()
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    }
+    function loadKeyframesLocal(){
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw){ throw new Error("Kein lokaler Speicher gefunden."); }
+      const payload = JSON.parse(raw);
+      if(payload.stepMinutes != null && document.getElementById("stepMinutes")) document.getElementById("stepMinutes").value = payload.stepMinutes;
+      if(payload.horizonHours != null && document.getElementById("horizonHours")) document.getElementById("horizonHours").value = payload.horizonHours;
+      if(payload.wrapAround != null && document.getElementById("wrapAround")) document.getElementById("wrapAround").value = payload.wrapAround;
+      if(payload.startDateTime != null && document.getElementById("startDateTime")) document.getElementById("startDateTime").value = payload.startDateTime;
+      setKeyframesToUI(payload.keyframes || []);
+      recalcAndRender();
+      exportHaJsonToBox();
+      return payload.savedAt || null;
+    }
+    function clearKeyframesLocal(){
+      localStorage.removeItem(LS_KEY);
+    }
+
+    document.getElementById("exportHaJsonBtn").addEventListener("click",exportHaJsonToBox);
+
+    document.getElementById("importHaJsonBtn").addEventListener("click", () => {
+      try {
+        importHaJsonFromBox();
+        msg.textContent = "HA JSON importiert.";
+        setTimeout(() => msg.textContent = "", 1200);
+      } catch (e) {
+        errorsEl.textContent = "HA-Import-Fehler: " + (e.message || e);
+      }
+    });
+
+    document.getElementById("downloadHaJsonBtn").addEventListener("click",()=>{
+      exportHaJsonToBox();
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(new Blob([document.getElementById("haBox").value],{type:"application/json"}));
+      a.download="ha_keyframe_schedule_v1.json";a.click();
+    });
+    
+    // --- Keyframes JSON file IO (array) ---
+    function _timestampForFilename() {
+      // YYYYMMDD_HHMMSS
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    }
+
+    function downloadKeyframesJsonFile() {
+      const kfs = getKeyframesFromUI();
+      const txt = JSON.stringify(kfs, null, 2);
+      const blob = new Blob([txt], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `keyframes_${_timestampForFilename()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function importKeyframesJsonFile(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error("Keine Datei gewählt."));
+        const r = new FileReader();
+        r.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
+        r.onload = () => {
+          try {
+            const obj = JSON.parse(String(r.result || ""));
+            if (!Array.isArray(obj)) throw new Error("JSON muss ein Array von Keyframes sein.");
+            setKeyframesToUI(obj);
+            recalcAndRender();
+            // sync boxes
+            document.getElementById("jsonBox").value = JSON.stringify(getKeyframesFromUI(), null, 2);
+            if (typeof exportHaJsonToBox === "function") exportHaJsonToBox();
+            resolve();
+          } catch (e) {
+            reject(e);
+          }
+        };
+        r.readAsText(file, "utf-8");
+      });
+    }
+
+    (function init() {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const isoLocal = new Date(start.getTime() - start.getTimezoneOffset()*60000).toISOString().slice(0,16);
+      document.getElementById("startDateTime").value = isoLocal;
+      setKeyframesToUI(presetExample());
+    })();
+  
+
+    // ---------------- PDF Export (Print-to-PDF) ----------------
+    function _escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function buildPdfReportHtml() {
+      const kfs = getKeyframesFromUI();
+      const stepMin = Number(document.getElementById("stepMinutes")?.value || 5);
+      const horizonH = Number(document.getElementById("horizonHours")?.value || 48);
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
+      const now = new Date();
+
+      // Chart image (current canvas)
+      const canvas = document.getElementById("chart");
+      let chartDataUrl = "";
+      try {
+        chartDataUrl = canvas?.toDataURL("image/png") || "";
+      } catch(e) {}
+
+      const rows = kfs.map((k, i) => {
+  const mode = (k.mode === "full") ? "KF→KF" : "Offset";
+  const offsetSec = Math.round((Number(k.offsetMin || 0) || 0) * 60);
+
+  function fmtHmsSigned(totalSeconds) {
+    const sign = totalSeconds < 0 ? "-" : "";
+    const s = Math.abs(totalSeconds);
+    const hh = Math.floor(s / 3600);
+    const mm = Math.floor((s % 3600) / 60);
+    const ss = Math.floor(s % 60);
+    return `${sign}${hh.toString().padStart(2,"0")}:${mm.toString().padStart(2,"0")}:${ss.toString().padStart(2,"0")}`;
+  }
+
+  const offsetStr = (k.mode === "full") ? "—" : fmtHmsSigned(offsetSec);
+  const fadeStr = `${Number(k.fadeSeconds ?? 0)} s`;
+
+  return `
+    <tr>
+      <td>${i+1}</td>
+      <td>${_escapeHtml(k.time || "")}</td>
+      <td style="text-align:right">${Number(k.kelvin||0).toFixed(0)}</td>
+      <td style="text-align:right">${Number(k.dim||0).toFixed(0)}</td>
+      <td>${_escapeHtml(k.curve || "linear")}</td>
+      <td>${_escapeHtml(mode)}</td>
+      <td style="text-align:right">${_escapeHtml(offsetStr)}</td>
+      <td>${_escapeHtml(fadeStr)}</td>
+    </tr>
+  `;
+}).join("");
+
+      const intro = `
+        <h1>Keyframe Scheduler Report</h1>
+        <div class="meta">
+          <div><b>Erstellt:</b> ${now.toLocaleString()} (${_escapeHtml(tz)})</div>
+          <div><b>Plot:</b> ${horizonH} h Horizont, Raster ${stepMin} min</div>
+        </div>
+
+        <h2>Begriffe & Übergänge</h2>
+        <ul>
+          <li><b>Keyframe</b>: Definiert Zielwerte für <b>Kelvin</b> und <b>Dim (%)</b> zu einer Uhrzeit.</li>
+          <li><b>Übergang / Kurve</b>: Zwischen zwei Keyframes (KF→KF) wird immer vom <i>vorherigen</i> Keyframe auf den <i>aktuellen</i> Keyframe überblendet – <b>linear</b> (gleichmäßig) oder <b>sinus</b> (weich). In diesem Fall wird ein gesetzter <b>Offset ignoriert</b>.</li>
+          <li><b>Offset-Semantik</b>: <code>offset &lt; 0</code> ⇒ Zielwert ist <i>am</i> Keyframe-Zeitpunkt erreicht. <code>offset &gt; 0</code> ⇒ Zielwert wird <i>nach</i> dem Keyframe erreicht. Im Report wird Offset als <b>hh:mm:ss</b> angezeigt; im HA-Export zusätzlich als <code>offsetSeconds</code>.</li>
+          <li><b>Fadezeit</b>: Pro Keyframe kann eine Fadezeit (<b>Sekunden</b>) gesetzt werden. Standard = <b>Raster</b> (globaler Zeitschritt in Sekunden). Der Wert wird im Export (HA JSON) pro Keyframe als <code>fadeSeconds</code> mitgegeben.</li>
+          <li><b>Priorität</b>: Bei überlappenden Transitionen gewinnt der Keyframe mit höherer Priorität (Tabellenreihenfolge / Drag & Drop).</li>
+          <li><b>48h Plot</b>: Darstellung über eine absolute Zeitachse, um Mitternachts-Sprünge sauber zu behandeln.</li>
+        </ul>
+      `;
+
+      const table = `
+        <h2>Keyframe Liste (Priorität = Tabellenreihenfolge)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Zeit</th>
+              <th>Kelvin</th>
+              <th>Dim %</th>
+              <th>Kurve</th>
+              <th>Übergang</th>
+              <th>Offset (hh:mm:ss)</th>
+              <th>Fade</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || `<tr><td colspan="8" class="muted">Keine Keyframes</td></tr>`}
+          </tbody>
+        </table>
+      `;
+
+      const plot = `
+        <h2>Plot (${horizonH} Stunden)</h2>
+        ${chartDataUrl ? `<img class="plot" src="${chartDataUrl}" alt="Plot">` : `<div class="muted">Plot konnte nicht eingebettet werden.</div>`}
+      `;
+
+      return `<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Keyframe Scheduler Report</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 18px; color: #111; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    h2 { margin: 18px 0 8px; font-size: 16px; }
+    .meta { font-size: 12px; color: #333; margin-bottom: 10px; }
+    ul { margin: 6px 0 0 18px; }
+    li { margin: 4px 0; font-size: 13px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #bbb; padding: 6px 8px; vertical-align: top; }
+    th { background: #f0f0f0; text-align: left; }
+    .muted { color: #666; }
+    .plot { width: 100%; max-width: 980px; border: 1px solid #bbb; border-radius: 8px; }
+    @media print {
+      body { margin: 10mm; }
+      h1, h2 { break-after: avoid; }
+      table, img { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  ${intro}
+  ${table}
+  ${plot}
+</body>
+</html>`;
+    }
+
+    function openPdfReportAndPrint() {
+      const html = buildPdfReportHtml();
+      const w = window.open("", "_blank");
+      if (!w) {
+        alert("Popup blockiert. Bitte Popups erlauben oder über Browser-Druckdialog exportieren.");
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      // Auto-open print dialog
+      w.focus();
+      setTimeout(() => {
+        try { w.print(); } catch(e) {}
+      }, 300);
+    }
+
+    document.getElementById('pdfBtn')?.addEventListener('click', openPdfReportAndPrint);
+
+</script>
+</body>
+</html>
