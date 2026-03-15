@@ -14,19 +14,19 @@
     "step": {
       "init": {
         "title": "Configure Schedule & Hardware",
-        "description": "Upload JSON file from webapp or paste manually",
+        "description": "📁 Workflow:\n1. In webapp: click '⬇️ Save as file'\n2. Open file with a text editor (Notepad, TextEdit, etc.)\n3. Copy content (Ctrl+A, Ctrl+C)\n4. Paste here (Ctrl+V)\n\n⚙️ Hardware type: determines the maximum transition time for your lights",
         "data": {
-          "schedule_file": "Upload JSON File",
-          "schedule_json": "Or paste JSON manually",
-          "hardware_type": "Hardware Type",
-          "custom_max_transition": "Custom Max Transition (seconds)"
+          "schedule_json": "Paste schedule JSON",
+          "hardware_type": "Hardware type",
+          "custom_max_transition": "Custom max transition (seconds)",
+          "follow_lights": "Follow lights"
         }
       }
     },
     "error": {
-      "invalid_json": "Invalid JSON format - check the file content",
-      "invalid_schedule": "Invalid schedule data - check keyframes",
-      "invalid_file": "Could not read file - please try manual paste"
+      "invalid_json": "Invalid JSON format — check the file content",
+      "invalid_schedule": "Invalid schedule data — check keyframes",
+      "invalid_file": "Could not read file — please try manual paste"
     }
   }
 }

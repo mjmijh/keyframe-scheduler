@@ -197,14 +197,4 @@ class KeyframeSchedulerOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=schema,
             errors=errors,
-            description_placeholders={
-                "info": (
-                    "📁 Workflow:\n"
-                    "1. In Webapp: '⬇️ Als Datei speichern' klicken\n"
-                    "2. Datei mit Texteditor öffnen (Notepad, TextEdit, etc.)\n"
-                    "3. Inhalt kopieren (Strg+A, Strg+C)\n"
-                    "4. Hier einfügen (Strg+V)\n\n"
-                    "⚙️ Hardware Type: Bestimmt max. Transition-Zeit für deine Lampen"
-                )
-            },
         )

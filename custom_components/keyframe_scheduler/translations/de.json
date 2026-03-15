@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Keyframe Scheduler einrichten",
+        "description": "Neue Keyframe Scheduler Instanz erstellen",
+        "data": {
+          "name": "Instanzname"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zeitplan & Hardware konfigurieren",
+        "description": "📁 Ablauf:\n1. In der Webapp: '⬇️ Als Datei speichern' klicken\n2. Datei mit Texteditor öffnen (Notepad, TextEdit, etc.)\n3. Inhalt kopieren (Strg+A, Strg+C)\n4. Hier einfügen (Strg+V)\n\n⚙️ Hardware-Typ: Bestimmt die maximale Übergangszeit für deine Lampen",
+        "data": {
+          "schedule_json": "Zeitplan-JSON einfügen",
+          "hardware_type": "Hardware-Typ",
+          "custom_max_transition": "Benutzerdefinierte max. Übergangszeit (Sekunden)",
+          "follow_lights": "Zu folgende Lichter"
+        }
+      }
+    },
+    "error": {
+      "invalid_json": "Ungültiges JSON-Format — Dateiinhalt prüfen",
+      "invalid_schedule": "Ungültige Zeitplandaten — Keyframes prüfen",
+      "invalid_file": "Datei konnte nicht gelesen werden — manuelles Einfügen versuchen"
+    }
+  }
+}

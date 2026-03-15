@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar Keyframe Scheduler",
+        "description": "Crear una nueva instancia de Keyframe Scheduler",
+        "data": {
+          "name": "Nombre de la instancia"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configurar horario y hardware",
+        "description": "📁 Pasos:\n1. En la webapp: hacer clic en '⬇️ Guardar como archivo'\n2. Abrir el archivo con un editor de texto (Notepad, TextEdit, etc.)\n3. Copiar el contenido (Ctrl+A, Ctrl+C)\n4. Pegarlo aquí (Ctrl+V)\n\n⚙️ Tipo de hardware: determina el tiempo máximo de transición para tus luces",
+        "data": {
+          "schedule_json": "Pegar JSON del horario",
+          "hardware_type": "Tipo de hardware",
+          "custom_max_transition": "Transición máxima personalizada (segundos)",
+          "follow_lights": "Luces a seguir"
+        }
+      }
+    },
+    "error": {
+      "invalid_json": "Formato JSON inválido — revisar el contenido del archivo",
+      "invalid_schedule": "Datos de horario inválidos — revisar los keyframes",
+      "invalid_file": "No se pudo leer el archivo — intentar pegado manual"
+    }
+  }
+}
