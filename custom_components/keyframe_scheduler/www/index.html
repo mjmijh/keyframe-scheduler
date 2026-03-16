@@ -391,7 +391,7 @@
     <header>
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
         <div>
-          <h1>ð Keyframe Scheduler</h1>
+          <h1>🌅 Keyframe Scheduler</h1>
           <p class="subtitle" id="subtitle-text">Erstelle dynamische Lichtsteuerung mit Farbtemperatur und Helligkeit</p>
         </div>
         <div class="btn-group" style="margin: 0;">
@@ -427,7 +427,7 @@
     <!-- Settings Card -->
     <div class="card">
       <div class="card-title">
-        <span class="card-title-icon">âï¸</span>
+        <span class="card-title-icon">⚙️</span>
         <span id="card-title-settings">Einstellungen</span>
       </div>
       
@@ -440,7 +440,7 @@
                oninput="updateScheduleName(this.value)"
                style="font-size: 16px; font-weight: 500;">
         <small id="help-schedule-name" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block;">
-          Wird fÃ¼r JSON-Dateinamen und PDF-Titel verwendet
+          Wird für JSON-Dateinamen und PDF-Titel verwendet
         </small>
       </div>
       
@@ -463,7 +463,7 @@
         <div class="form-group">
           <label for="wrapAround" id="label-wrap-around">Wiederholung</label>
           <select id="wrapAround">
-            <option value="true" selected id="opt-repeat-daily">TÃ¤glich wiederholen</option>
+            <option value="true" selected id="opt-repeat-daily">Täglich wiederholen</option>
             <option value="false" id="opt-repeat-once">Einmalig</option>
           </select>
         </div>
@@ -475,22 +475,22 @@
     <!-- Keyframes Card -->
     <div class="card">
       <div class="card-title">
-        <span class="card-title-icon">â±ï¸</span>
+        <span class="card-title-icon">⏱️</span>
         <span id="card-title-keyframes">Keyframes</span>
       </div>
 
       <div class="btn-group">
         <button id="addKeyframeBtn">
-          â Keyframe hinzufÃ¼gen
+          ➕ Keyframe hinzufügen
         </button>
         <button class="secondary" id="sortByTimeBtn">
-          ð Nach Zeit sortieren
+          🔄 Nach Zeit sortieren
         </button>
         <button class="secondary" id="loadPresetBtn">
-          ð Beispiel laden
+          📋 Beispiel laden
         </button>
         <button class="secondary" id="loadFileBtn">
-          ð Datei laden
+          📂 Datei laden
         </button>
       </div>
       <input type="file" id="fileInputTop" accept=".json" style="display: none;">
@@ -507,7 +507,7 @@
     <!-- Chart Card -->
     <div class="card">
       <div class="card-title">
-        <span class="card-title-icon">ð</span>
+        <span class="card-title-icon">📊</span>
         <span id="card-title-preview">Vorschau</span>
       </div>
 
@@ -521,7 +521,7 @@
 
       <div class="btn-group" style="margin-top: 16px;">
         <button class="secondary" id="downloadCsvBtn">
-          ð CSV Export
+          📊 CSV Export
         </button>
       </div>
     </div>
@@ -529,16 +529,16 @@
     <!-- Export/Import Card -->
     <div class="card">
       <div class="card-title">
-        <span class="card-title-icon">ð¾</span>
+        <span class="card-title-icon">💾</span>
         <span id="card-title-export">Export & Import</span>
       </div>
 
       <div class="btn-group">
         <button class="success" id="downloadJsonBtn">
-          â¬ï¸ Als Datei speichern
+          ⬇️ Als Datei speichern
         </button>
         <button class="secondary" id="downloadPdfBtn">
-          ð PDF Export
+          📄 PDF Export
         </button>
       </div>
       <input type="file" id="fileInput" accept=".json" style="display: none;">
@@ -548,7 +548,7 @@
         <textarea id="jsonOutput" class="json-box" readonly></textarea>
         <div class="btn-group" style="margin-top: 12px;">
           <button class="small secondary" id="importFromTextBtn">
-            <span id="btn-import-json">â¬ï¸ JSON Ã¼bernehmen</span>
+            <span id="btn-import-json">⬅️ JSON übernehmen</span>
           </button>
         </div>
       </details>
@@ -622,7 +622,7 @@ const translations = {
     // Card titles
     settings: "Einstellungen",
     schedule_name_label: "Schedule Name",
-    schedule_name_help: "Wird fÃ¼r JSON-Dateinamen und PDF-Titel verwendet",
+    schedule_name_help: "Wird für JSON-Dateinamen und PDF-Titel verwendet",
     keyframes: "Keyframes",
     preview: "Vorschau",
     export_import: "Export & Import",
@@ -633,15 +633,15 @@ const translations = {
     wrap_around_label: "Wiederholung",
     
     // Buttons
-    add_keyframe: "â Keyframe hinzufÃ¼gen",
-    sort_by_time: "ð Nach Zeit sortieren",
-    load_example: "ð Beispiel laden",
-    load_file: "ð Datei laden",
-    save_file: "â¬ï¸ Als Datei speichern",
-    pdf_export: "ð PDF Export",
-    csv_export: "ð CSV Export",
+    add_keyframe: "➕ Keyframe hinzufügen",
+    sort_by_time: "🔄 Nach Zeit sortieren",
+    load_example: "📋 Beispiel laden",
+    load_file: "📂 Datei laden",
+    save_file: "⬇️ Als Datei speichern",
+    pdf_export: "📄 PDF Export",
+    csv_export: "📊 CSV Export",
     show_json: "JSON anzeigen/bearbeiten",
-    import_text: "â¬ï¸ JSON Ã¼bernehmen",
+    import_text: "⬅️ JSON übernehmen",
     
     // Table headers
     th_time: "ZEIT",
@@ -666,24 +666,24 @@ const translations = {
     curve_linear: "Linear",
     
     // Info box
-    info_modes_title: "Modi erklÃ¤rt:",
+    info_modes_title: "Modi erklärt:",
     info_instant: "Sofortiger Sprung zum Zielwert zur angegebenen Zeit",
-    info_transition: "Sanfte Ãberblendung zum Zielwert mit einstellbarer Dauer (H:M:S Format)",
+    info_transition: "Sanfte Überblendung zum Zielwert mit einstellbarer Dauer (H:M:S Format)",
     info_transition_after: "Transition startet zur angegebenen Zeit",
-    info_transition_before: "Transition endet zur angegebenen Zeit (startet frÃ¼her)",
-    info_transition_curve: "Kurve: Linear (gleichmÃ¤Ãig) oder Sinus (sanfter Start/Ende)",
+    info_transition_before: "Transition endet zur angegebenen Zeit (startet früher)",
+    info_transition_curve: "Kurve: Linear (gleichmäßig) oder Sinus (sanfter Start/Ende)",
     info_interpolate: "Durchgehende Interpolation vom vorherigen Keyframe",
-    info_interpolate_curve: "Kurve: Linear oder Sinus fÃ¼r den gesamten Ãbergang",
-    info_transition_time: "ð¡ Transition-Zeit:",
+    info_interpolate_curve: "Kurve: Linear oder Sinus für den gesamten Übergang",
+    info_transition_time: "💡 Transition-Zeit:",
     info_interpolate_time: "Verwendet automatisch die Aktualisierungszeit (z.B. 5 Min = 0:05:00)",
-    info_transition_any: "Beliebige Zeit mÃ¶glich (z.B. 0:00:30 fÃ¼r DALI, 0:30:00 fÃ¼r lange ÃbergÃ¤nge)",
+    info_transition_any: "Beliebige Zeit möglich (z.B. 0:00:30 für DALI, 0:30:00 für lange Übergänge)",
     
     // Workflow
-    workflow_title: "ð Workflow fÃ¼r Home Assistant:",
-    workflow_step1: "klicken â JSON-Datei herunterladen",
-    workflow_step2: "JSON-Datei hochladen â Senden",
-    workflow_step3: "â ï¸ <strong>Integration neu laden!</strong>",
-    workflow_step3_detail: "MenÃ¼ â Integration neu laden",
+    workflow_title: "📋 Workflow für Home Assistant:",
+    workflow_step1: "klicken → JSON-Datei herunterladen",
+    workflow_step2: "JSON-Datei hochladen → Senden",
+    workflow_step3: "⚠️ <strong>Integration neu laden!</strong>",
+    workflow_step3_detail: "Menü → Integration neu laden",
     
     // Chart
     chart_brightness: "Helligkeit % (normalisiert)",
@@ -691,12 +691,12 @@ const translations = {
     
     // Stats
     stats_keyframes: "Keyframes:",
-    stats_kelvin: "Ã Kelvin:",
-    stats_brightness: "Ã Helligkeit:",
-    stats_transition: "Ã Transition:",
+    stats_kelvin: "Ø Kelvin:",
+    stats_brightness: "Ø Helligkeit:",
+    stats_transition: "Ø Transition:",
     
     // Empty state
-    empty_message: "Klicke auf \"Keyframe hinzufÃ¼gen\" oder \"Beispiel laden\"",
+    empty_message: "Klicke auf \"Keyframe hinzufügen\" oder \"Beispiel laden\"",
     
     // PDF
     pdf_title: "Keyframe Scheduler - Zeitplan",
@@ -709,37 +709,37 @@ const translations = {
     pdf_transition: "Transition",
     pdf_curve: "Kurve",
     pdf_preview: "Vorschau-Diagramm",
-    pdf_explanations: "Modi erklÃ¤rt",
+    pdf_explanations: "Modi erklärt",
     pdf_instant_title: "Instant",
     pdf_instant_desc: "Sofortiger Sprung zum Zielwert zur angegebenen Zeit.",
     pdf_transition_title: "Transition",
-    pdf_transition_desc: "Sanfte Ãberblendung zum Zielwert mit einstellbarer Dauer (H:M:S Format).\nâ¢ Nach KF: Transition startet zur angegebenen Zeit\nâ¢ Vor KF: Transition endet zur angegebenen Zeit (startet frÃ¼her)",
+    pdf_transition_desc: "Sanfte Überblendung zum Zielwert mit einstellbarer Dauer (H:M:S Format).\n• Nach KF: Transition startet zur angegebenen Zeit\n• Vor KF: Transition endet zur angegebenen Zeit (startet früher)",
     pdf_interpolate_title: "Interpolate",
-    pdf_interpolate_desc: "Durchgehende Interpolation vom vorherigen Keyframe zum nÃ¤chsten interpolate Keyframe.\nBerÃ¼cksichtigt automatisch Transitions dazwischen.",
+    pdf_interpolate_desc: "Durchgehende Interpolation vom vorherigen Keyframe zum nächsten interpolate Keyframe.\nBerücksichtigt automatisch Transitions dazwischen.",
     pdf_curves_title: "Kurven",
     pdf_linear_title: "Linear",
-    pdf_linear_desc: "GleichmÃ¤Ãiger Ãbergang - konstante Geschwindigkeit.",
+    pdf_linear_desc: "Gleichmäßiger Übergang - konstante Geschwindigkeit.",
     pdf_sinus_title: "Sinus",
-    pdf_sinus_desc: "Sanfter Ãbergang - langsam am Anfang und Ende, schnell in der Mitte.",
+    pdf_sinus_desc: "Sanfter Übergang - langsam am Anfang und Ende, schnell in der Mitte.",
     pdf_transition_time_title: "Transition-Zeit",
     pdf_interpolate_time_desc: "Verwendet automatisch die Aktualisierungszeit (z.B. 5 Min = 0:05:00)",
-    pdf_transition_any_desc: "Beliebige Zeit mÃ¶glich (z.B. 0:00:30 fÃ¼r DALI, 0:30:00 fÃ¼r lange ÃbergÃ¤nge)",
+    pdf_transition_any_desc: "Beliebige Zeit möglich (z.B. 0:00:30 für DALI, 0:30:00 für lange Übergänge)",
     
     // Dropdown options
     hours_24: "24 Stunden",
     hours_48: "48 Stunden",
     hours_72: "72 Stunden",
-    repeat_daily: "TÃ¤glich wiederholen",
+    repeat_daily: "Täglich wiederholen",
     repeat_once: "Einmalig",
     
     // Help texts
-    help_step_minutes: "Bestimmt die HÃ¤ufigkeit der Updates in Home Assistant und die Standard-Transition-Zeit.",
+    help_step_minutes: "Bestimmt die Häufigkeit der Updates in Home Assistant und die Standard-Transition-Zeit.",
     help_standard_transition: "Standard-Transition:",
     help_example: "Beispiel:",
-    help_transition_note: "(Aktualisierung Ã 60) Sekunden",
-    help_transition_example: "5 Minuten = 300s Transition (auÃer im Keyframe kÃ¼rzer angegeben)",
-    tip_title: "ð¡ Tipp:",
-    tip_text: "Die Reihenfolge der Keyframes bestimmt ihre PrioritÃ¤t bei Ãberschneidungen. Verwende das â®â® Symbol zum Verschieben."
+    help_transition_note: "(Aktualisierung × 60) Sekunden",
+    help_transition_example: "5 Minuten = 300s Transition (außer im Keyframe kürzer angegeben)",
+    tip_title: "💡 Tipp:",
+    tip_text: "Die Reihenfolge der Keyframes bestimmt ihre Priorität bei Überschneidungen. Verwende das ⋮⋮ Symbol zum Verschieben."
   },
   
   en: {
@@ -760,15 +760,15 @@ const translations = {
     wrap_around_label: "24h Repeat",
     
     // Buttons
-    add_keyframe: "â Add Keyframe",
-    sort_by_time: "ð Sort by Time",
-    load_example: "ð Load Example",
-    load_file: "ð Load File",
-    save_file: "â¬ï¸ Save as File",
-    pdf_export: "ð PDF Export",
-    csv_export: "ð CSV Export",
+    add_keyframe: "➕ Add Keyframe",
+    sort_by_time: "🔄 Sort by Time",
+    load_example: "📋 Load Example",
+    load_file: "📂 Load File",
+    save_file: "⬇️ Save as File",
+    pdf_export: "📄 PDF Export",
+    csv_export: "📊 CSV Export",
     show_json: "Show/Edit JSON",
-    import_text: "â¬ï¸ Import JSON",
+    import_text: "⬅️ Import JSON",
     
     // Table headers
     th_time: "TIME",
@@ -801,16 +801,16 @@ const translations = {
     info_transition_curve: "Curve: Linear (uniform) or Sine (smooth start/end)",
     info_interpolate: "Continuous interpolation from previous keyframe",
     info_interpolate_curve: "Curve: Linear or Sine for entire transition",
-    info_transition_time: "ð¡ Transition Time:",
+    info_transition_time: "💡 Transition Time:",
     info_interpolate_time: "Automatically uses update time (e.g. 5 min = 0:05:00)",
     info_transition_any: "Any time possible (e.g. 0:00:30 for DALI, 0:30:00 for long transitions)",
     
     // Workflow
-    workflow_title: "ð Workflow for Home Assistant:",
-    workflow_step1: "click â Download JSON file",
-    workflow_step2: "Upload JSON file â Send",
-    workflow_step3: "â ï¸ <strong>Reload Integration!</strong>",
-    workflow_step3_detail: "Menu â Reload Integration",
+    workflow_title: "📋 Workflow for Home Assistant:",
+    workflow_step1: "click → Download JSON file",
+    workflow_step2: "Upload JSON file → Send",
+    workflow_step3: "⚠️ <strong>Reload Integration!</strong>",
+    workflow_step3_detail: "Menu → Reload Integration",
     
     // Chart
     chart_brightness: "Brightness % (normalized)",
@@ -818,9 +818,9 @@ const translations = {
     
     // Stats
     stats_keyframes: "Keyframes:",
-    stats_kelvin: "Ã Kelvin:",
-    stats_brightness: "Ã Brightness:",
-    stats_transition: "Ã Transition:",
+    stats_kelvin: "Ø Kelvin:",
+    stats_brightness: "Ø Brightness:",
+    stats_transition: "Ø Transition:",
     
     // Empty state
     empty_message: "Click \"Add Keyframe\" or \"Load Example\"",
@@ -840,7 +840,7 @@ const translations = {
     pdf_instant_title: "Instant",
     pdf_instant_desc: "Immediate jump to target value at specified time.",
     pdf_transition_title: "Transition",
-    pdf_transition_desc: "Smooth transition to target value with adjustable duration (H:M:S format).\nâ¢ After KF: Transition starts at specified time\nâ¢ Before KF: Transition ends at specified time (starts earlier)",
+    pdf_transition_desc: "Smooth transition to target value with adjustable duration (H:M:S format).\n• After KF: Transition starts at specified time\n• Before KF: Transition ends at specified time (starts earlier)",
     pdf_interpolate_title: "Interpolate",
     pdf_interpolate_desc: "Continuous interpolation from previous keyframe to next interpolate keyframe.\nAutomatically accounts for transitions in between.",
     pdf_curves_title: "Curves",
@@ -863,56 +863,56 @@ const translations = {
     help_step_minutes: "Determines the frequency of updates in Home Assistant and the default transition time.",
     help_standard_transition: "Default Transition:",
     help_example: "Example:",
-    help_transition_note: "(Update Interval Ã 60) seconds",
+    help_transition_note: "(Update Interval × 60) seconds",
     help_transition_example: "5 minutes = 300s transition (unless shorter specified in keyframe)",
-    tip_title: "ð¡ Tip:",
-    tip_text: "The order of keyframes determines their priority when overlapping. Use the â®â® symbol to reorder."
+    tip_title: "💡 Tip:",
+    tip_text: "The order of keyframes determines their priority when overlapping. Use the ⋮⋮ symbol to reorder."
   },
   
   es: {
     // Header
-    subtitle: "Crea control de iluminaciÃ³n dinÃ¡mico con temperatura de color y brillo",
+    subtitle: "Crea control de iluminación dinámico con temperatura de color y brillo",
     
     // Card titles
-    settings: "ConfiguraciÃ³n",
+    settings: "Configuración",
     schedule_name_label: "Nombre del horario",
-    schedule_name_help: "Se utiliza para nombres de archivos JSON y tÃ­tulo de PDF",
+    schedule_name_help: "Se utiliza para nombres de archivos JSON y título de PDF",
     keyframes: "Keyframes",
     preview: "Vista Previa",
     export_import: "Exportar e Importar",
     
     // Settings
-    step_minutes_label: "Intervalo de ActualizaciÃ³n (Minutos)",
-    horizon_hours_label: "DuraciÃ³n de Vista Previa (Horas)",
-    wrap_around_label: "RepeticiÃ³n 24h",
+    step_minutes_label: "Intervalo de Actualización (Minutos)",
+    horizon_hours_label: "Duración de Vista Previa (Horas)",
+    wrap_around_label: "Repetición 24h",
     
     // Buttons
-    add_keyframe: "â AÃ±adir Keyframe",
-    sort_by_time: "ð Ordenar por Tiempo",
-    load_example: "ð Cargar Ejemplo",
-    load_file: "ð Cargar Archivo",
-    save_file: "â¬ï¸ Guardar como Archivo",
-    pdf_export: "ð Exportar PDF",
-    csv_export: "ð Exportar CSV",
+    add_keyframe: "➕ Añadir Keyframe",
+    sort_by_time: "🔄 Ordenar por Tiempo",
+    load_example: "📋 Cargar Ejemplo",
+    load_file: "📂 Cargar Archivo",
+    save_file: "⬇️ Guardar como Archivo",
+    pdf_export: "📄 Exportar PDF",
+    csv_export: "📊 Exportar CSV",
     show_json: "Mostrar/Editar JSON",
-    import_text: "â¬ï¸ Importar JSON",
+    import_text: "⬅️ Importar JSON",
     
     // Table headers
     th_time: "TIEMPO",
     th_kelvin: "KELVIN",
     th_brightness: "BRILLO %",
     th_mode: "MODO",
-    th_transition: "TRANSICIÃN (H:M:S)",
-    th_direction: "DIRECCIÃN",
+    th_transition: "TRANSICIÓN (H:M:S)",
+    th_direction: "DIRECCIÓN",
     th_curve: "CURVA",
     
     // Modes
-    mode_instant: "InstantÃ¡neo",
-    mode_transition: "TransiciÃ³n",
+    mode_instant: "Instantáneo",
+    mode_transition: "Transición",
     mode_interpolate: "Interpolar",
     
     // Directions
-    dir_after: "DespuÃ©s KF",
+    dir_after: "Después KF",
     dir_before: "Antes KF",
     
     // Curves
@@ -922,22 +922,22 @@ const translations = {
     // Info box
     info_modes_title: "Modos Explicados:",
     info_instant: "Salto inmediato al valor objetivo en el tiempo especificado",
-    info_transition: "TransiciÃ³n suave al valor objetivo con duraciÃ³n ajustable (formato H:M:S)",
-    info_transition_after: "La transiciÃ³n comienza en el tiempo especificado",
-    info_transition_before: "La transiciÃ³n termina en el tiempo especificado (comienza antes)",
+    info_transition: "Transición suave al valor objetivo con duración ajustable (formato H:M:S)",
+    info_transition_after: "La transición comienza en el tiempo especificado",
+    info_transition_before: "La transición termina en el tiempo especificado (comienza antes)",
     info_transition_curve: "Curva: Lineal (uniforme) o Sinusoidal (inicio/fin suave)",
-    info_interpolate: "InterpolaciÃ³n continua desde el keyframe anterior",
-    info_interpolate_curve: "Curva: Lineal o Sinusoidal para toda la transiciÃ³n",
-    info_transition_time: "ð¡ Tiempo de TransiciÃ³n:",
-    info_interpolate_time: "Usa automÃ¡ticamente el tiempo de actualizaciÃ³n (ej. 5 min = 0:05:00)",
+    info_interpolate: "Interpolación continua desde el keyframe anterior",
+    info_interpolate_curve: "Curva: Lineal o Sinusoidal para toda la transición",
+    info_transition_time: "💡 Tiempo de Transición:",
+    info_interpolate_time: "Usa automáticamente el tiempo de actualización (ej. 5 min = 0:05:00)",
     info_transition_any: "Cualquier tiempo posible (ej. 0:00:30 para DALI, 0:30:00 para transiciones largas)",
     
     // Workflow
-    workflow_title: "ð Flujo de Trabajo para Home Assistant:",
-    workflow_step1: "hacer clic â Descargar archivo JSON",
-    workflow_step2: "Subir archivo JSON â Enviar",
-    workflow_step3: "â ï¸ <strong>Â¡Recargar IntegraciÃ³n!</strong>",
-    workflow_step3_detail: "MenÃº â Recargar IntegraciÃ³n",
+    workflow_title: "📋 Flujo de Trabajo para Home Assistant:",
+    workflow_step1: "hacer clic → Descargar archivo JSON",
+    workflow_step2: "Subir archivo JSON → Enviar",
+    workflow_step3: "⚠️ <strong>¡Recargar Integración!</strong>",
+    workflow_step3_detail: "Menú → Recargar Integración",
     
     // Chart
     chart_brightness: "Brillo % (normalizado)",
@@ -945,12 +945,12 @@ const translations = {
     
     // Stats
     stats_keyframes: "Keyframes:",
-    stats_kelvin: "Ã Kelvin:",
-    stats_brightness: "Ã Brillo:",
-    stats_transition: "Ã TransiciÃ³n:",
+    stats_kelvin: "Ø Kelvin:",
+    stats_brightness: "Ø Brillo:",
+    stats_transition: "Ø Transición:",
     
     // Empty state
-    empty_message: "Haz clic en \"AÃ±adir Keyframe\" o \"Cargar Ejemplo\"",
+    empty_message: "Haz clic en \"Añadir Keyframe\" o \"Cargar Ejemplo\"",
     
     // PDF
     pdf_title: "Keyframe Scheduler - Horario",
@@ -960,23 +960,23 @@ const translations = {
     pdf_kelvin: "Kelvin",
     pdf_brightness: "Brillo",
     pdf_mode: "Modo",
-    pdf_transition: "TransiciÃ³n",
+    pdf_transition: "Transición",
     pdf_curve: "Curva",
-    pdf_preview: "GrÃ¡fico de Vista Previa",
+    pdf_preview: "Gráfico de Vista Previa",
     pdf_explanations: "Modos Explicados",
-    pdf_instant_title: "InstantÃ¡neo",
+    pdf_instant_title: "Instantáneo",
     pdf_instant_desc: "Salto inmediato al valor objetivo en el tiempo especificado.",
-    pdf_transition_title: "TransiciÃ³n",
-    pdf_transition_desc: "TransiciÃ³n suave al valor objetivo con duraciÃ³n ajustable (formato H:M:S).\nâ¢ DespuÃ©s KF: La transiciÃ³n comienza en el tiempo especificado\nâ¢ Antes KF: La transiciÃ³n termina en el tiempo especificado (comienza antes)",
+    pdf_transition_title: "Transición",
+    pdf_transition_desc: "Transición suave al valor objetivo con duración ajustable (formato H:M:S).\n• Después KF: La transición comienza en el tiempo especificado\n• Antes KF: La transición termina en el tiempo especificado (comienza antes)",
     pdf_interpolate_title: "Interpolar",
-    pdf_interpolate_desc: "InterpolaciÃ³n continua desde el keyframe anterior al siguiente keyframe de interpolaciÃ³n.\nConsidera automÃ¡ticamente las transiciones intermedias.",
+    pdf_interpolate_desc: "Interpolación continua desde el keyframe anterior al siguiente keyframe de interpolación.\nConsidera automáticamente las transiciones intermedias.",
     pdf_curves_title: "Curvas",
     pdf_linear_title: "Lineal",
-    pdf_linear_desc: "TransiciÃ³n uniforme - velocidad constante.",
+    pdf_linear_desc: "Transición uniforme - velocidad constante.",
     pdf_sinus_title: "Sinusoidal",
-    pdf_sinus_desc: "TransiciÃ³n suave - lento al principio y al final, rÃ¡pido en el medio.",
-    pdf_transition_time_title: "Tiempo de TransiciÃ³n",
-    pdf_interpolate_time_desc: "Usa automÃ¡ticamente el tiempo de actualizaciÃ³n (ej. 5 min = 0:05:00)",
+    pdf_sinus_desc: "Transición suave - lento al principio y al final, rápido en el medio.",
+    pdf_transition_time_title: "Tiempo de Transición",
+    pdf_interpolate_time_desc: "Usa automáticamente el tiempo de actualización (ej. 5 min = 0:05:00)",
     pdf_transition_any_desc: "Cualquier tiempo posible (ej. 0:00:30 para DALI, 0:30:00 para transiciones largas)",
     
     // Dropdown options
@@ -987,13 +987,13 @@ const translations = {
     repeat_once: "Una Vez",
     
     // Help texts
-    help_step_minutes: "Determina la frecuencia de actualizaciones en Home Assistant y el tiempo de transiciÃ³n predeterminado.",
-    help_standard_transition: "TransiciÃ³n Predeterminada:",
+    help_step_minutes: "Determina la frecuencia de actualizaciones en Home Assistant y el tiempo de transición predeterminado.",
+    help_standard_transition: "Transición Predeterminada:",
     help_example: "Ejemplo:",
-    help_transition_note: "(Intervalo de ActualizaciÃ³n Ã 60) segundos",
-    help_transition_example: "5 minutos = 300s transiciÃ³n (a menos que se especifique mÃ¡s corto en el keyframe)",
-    tip_title: "ð¡ Consejo:",
-    tip_text: "El orden de los keyframes determina su prioridad cuando se superponen. Usa el sÃ­mbolo â®â® para reordenar."
+    help_transition_note: "(Intervalo de Actualización × 60) segundos",
+    help_transition_example: "5 minutos = 300s transición (a menos que se especifique más corto en el keyframe)",
+    tip_title: "💡 Consejo:",
+    tip_text: "El orden de los keyframes determina su prioridad cuando se superponen. Usa el símbolo ⋮⋮ para reordenar."
 
   }
 };
@@ -1013,15 +1013,15 @@ const translations = {
         <strong>${t('info_modes_title')}</strong><br>
         <span class="badge instant">${t('mode_instant')}</span> ${t('info_instant')}<br>
         <span class="badge transition">${t('mode_transition')}</span> ${t('info_transition')}<br>
-        â¢ <strong>${t('dir_after')}</strong>: ${t('info_transition_after')}<br>
-        â¢ <strong>${t('dir_before')}</strong>: ${t('info_transition_before')}<br>
-        â¢ <strong>${t('pdf_curve')}</strong>: ${t('info_transition_curve')}<br>
+        • <strong>${t('dir_after')}</strong>: ${t('info_transition_after')}<br>
+        • <strong>${t('dir_before')}</strong>: ${t('info_transition_before')}<br>
+        • <strong>${t('pdf_curve')}</strong>: ${t('info_transition_curve')}<br>
         <span class="badge interpolate">${t('mode_interpolate')}</span> ${t('info_interpolate')}<br>
-        â¢ <strong>${t('pdf_curve')}</strong>: ${t('info_interpolate_curve')}<br>
+        • <strong>${t('pdf_curve')}</strong>: ${t('info_interpolate_curve')}<br>
         <br>
         <strong>${t('info_transition_time')}</strong><br>
-        â¢ <strong>${t('mode_interpolate')}:</strong> ${t('info_interpolate_time')}<br>
-        â¢ <strong>${t('mode_transition')}/${t('mode_instant')}:</strong> ${t('info_transition_any')}
+        • <strong>${t('mode_interpolate')}:</strong> ${t('info_interpolate_time')}<br>
+        • <strong>${t('mode_transition')}/${t('mode_instant')}:</strong> ${t('info_transition_any')}
       `;
     }
     
@@ -1032,9 +1032,9 @@ const translations = {
       workflowBox.innerHTML = `
         <strong>${t('workflow_title')}</strong><br>
         1. <strong>"${t('save_file')}"</strong> ${t('workflow_step1')}<br>
-        2. In HA: <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">${t('settings')} â Keyframe Scheduler â Options</code><br>
+        2. In HA: <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">${t('settings')} → Keyframe Scheduler → Options</code><br>
         3. <strong>${t('workflow_step2')}</strong><br>
-        4. ${t('workflow_step3')} <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">â® ${t('workflow_step3_detail')}</code>
+        4. ${t('workflow_step3')} <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">⋮ ${t('workflow_step3_detail')}</code>
       `;
     }
     
@@ -1219,7 +1219,7 @@ const translations = {
     }
 
     function deleteKeyframe(index) {
-      if (confirm('Keyframe wirklich lÃ¶schen?')) {
+      if (confirm('Keyframe wirklich löschen?')) {
         state.keyframes.splice(index, 1);
         saveState();
         updateUI();
@@ -1309,7 +1309,7 @@ const translations = {
       if (state.keyframes.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
-            <div class="empty-state-icon">â±ï¸</div>
+            <div class="empty-state-icon">⏱️</div>
             <p>${t('empty_message')}</p>
           </div>
         `;
@@ -1341,7 +1341,7 @@ const translations = {
         
         html += `
           <tr draggable="true" data-index="${index}">
-            <td><span class="drag-handle">â®â®</span></td>
+            <td><span class="drag-handle">⋮⋮</span></td>
             <td><span class="row-number">${index + 1}</span></td>
             <td>
               <input type="time" value="${kf.time}" 
@@ -1408,7 +1408,7 @@ const translations = {
             </td>
             <td>
               <button class="small danger" onclick="deleteKeyframe(${index})">
-                ðï¸
+                🗑️
               </button>
             </td>
           </tr>
@@ -1800,7 +1800,7 @@ const translations = {
         dimData.push(values.dim);
         transitionData.push(values.transition);
         
-        // Normalize Kelvin: 2000-6500 â 0-100%
+        // Normalize Kelvin: 2000-6500 → 0-100%
         const kelvinNormalized = ((values.kelvin - 2000) / (6500 - 2000)) * 100;
         kelvinNormalizedData.push(kelvinNormalized);
         
@@ -1952,15 +1952,15 @@ const translations = {
           <span>${state.keyframes.length}</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Ã Kelvin:</span>
+          <span class="stat-label">Ø Kelvin:</span>
           <span>${avgKelvin} K</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Ã Helligkeit:</span>
+          <span class="stat-label">Ø Helligkeit:</span>
           <span>${avgDim}%</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Ã Transition:</span>
+          <span class="stat-label">Ø Transition:</span>
           <span>${avgTransition}s</span>
         </div>
       `;
@@ -1973,7 +1973,7 @@ const translations = {
     function generateHaJson() {
       return {
         version: 1,
-        name: state.scheduleName || 'My Schedule',  // Metadata: WebApp verwendet es fÃ¼r Dateinamen/Titel
+        name: state.scheduleName || 'My Schedule',  // Metadata: WebApp verwendet es für Dateinamen/Titel
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Berlin",
         stepMinutes: state.stepMinutes,
         horizonHours: state.horizonHours,
@@ -2242,13 +2242,13 @@ const translations = {
             
             saveState();
             updateUI();
-            alert('â Zeitplan erfolgreich importiert!');
+            alert('✅ Zeitplan erfolgreich importiert!');
           } else {
-            alert('â UngÃ¼ltiges JSON-Format');
+            alert('❌ Ungültiges JSON-Format');
           }
         } catch (err) {
           console.error('Import error:', err);
-          alert('â Fehler beim Importieren der Datei');
+          alert('❌ Fehler beim Importieren der Datei');
         }
       };
       reader.readAsText(file);
@@ -2279,13 +2279,13 @@ const translations = {
           
           saveState();
           updateUI();
-          alert('â JSON erfolgreich Ã¼bernommen!');
+          alert('✅ JSON erfolgreich übernommen!');
         } else {
-          alert('â UngÃ¼ltiges JSON-Format');
+          alert('❌ Ungültiges JSON-Format');
         }
       } catch (err) {
         console.error('Import error:', err);
-        alert('â UngÃ¼ltiges JSON');
+        alert('❌ Ungültiges JSON');
       }
     }
 
