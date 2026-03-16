@@ -1,12 +1,15 @@
-"""Keyframe Scheduler integration v2.1.0 - Event-based coordinator."""
+"""Keyframe Scheduler integration - Event-based coordinator."""
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
+from homeassistant.components import frontend
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers.event import async_track_point_in_time
@@ -354,9 +357,41 @@ class HybridSchedulerCoordinator(DataUpdateCoordinator):
             self._unsub_next_update = None
 
 
+_PANEL_URL_PATH = "keyframe-scheduler"
+_STATIC_URL_PATH = "/keyframe_scheduler"
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Keyframe Scheduler from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+
+    # Register static path for the bundled webapp (once per HA process)
+    if not hass.data[DOMAIN].get("static_path_registered"):
+        webapp_dir = os.path.join(os.path.dirname(__file__), "www")
+        if os.path.isdir(webapp_dir):
+            try:
+                await hass.http.async_register_static_paths([
+                    StaticPathConfig(_STATIC_URL_PATH, webapp_dir, cache_headers=False)
+                ])
+                hass.data[DOMAIN]["static_path_registered"] = True
+            except Exception as err:
+                _LOGGER.warning("Could not register static path for webapp: %s", err)
+
+    # Register sidebar panel (once — panels are global, not per entry)
+    if not hass.data[DOMAIN].get("panel_registered"):
+        try:
+            frontend.async_register_built_in_panel(
+                hass,
+                component_name="iframe",
+                sidebar_title="Keyframe Scheduler",
+                sidebar_icon="mdi:chart-timeline-variant",
+                frontend_url_path=_PANEL_URL_PATH,
+                config={"url": f"{_STATIC_URL_PATH}/index.html"},
+                require_admin=False,
+            )
+            hass.data[DOMAIN]["panel_registered"] = True
+        except Exception:
+            pass
 
     # Initialize store
     if "store" not in hass.data[DOMAIN]:
@@ -577,10 +612,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.entry_id in hass.data[DOMAIN]:
         coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
         await coordinator.async_shutdown()
-    
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    
+
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+
+        # Remove panel when the last config entry is removed
+        _meta_keys = {"store", "static_path_registered", "panel_registered"}
+        remaining_entries = [k for k in hass.data[DOMAIN] if k not in _meta_keys]
+        if not remaining_entries and hass.data[DOMAIN].pop("panel_registered", False):
+            try:
+                frontend.async_remove_panel(hass, _PANEL_URL_PATH)
+            except Exception:
+                pass
 
     return unload_ok

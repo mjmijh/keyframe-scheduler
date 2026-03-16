@@ -1,7 +1,7 @@
 {
   "domain": "keyframe_scheduler",
   "name": "Keyframe Scheduler",
-  "version": "3.0.11",
+  "version": "3.0.12",
   "documentation": "https://github.com/mjmijh/keyframe-scheduler",
   "issue_tracker": "https://github.com/mjmijh/keyframe-scheduler/issues",
   "codeowners": [],

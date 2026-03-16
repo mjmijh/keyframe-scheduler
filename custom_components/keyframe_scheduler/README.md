@@ -1,6 +1,17 @@
-# Keyframe Scheduler v3.0.10
+# Keyframe Scheduler v3.0.12
 
 Home Assistant Integration für zeitbasierte Keyframe-Interpolation von Licht-Werten (Brightness, Color Temperature).
+
+---
+
+## Webapp
+
+After installation, the **Keyframe Scheduler** webapp appears as a sidebar entry in Home Assistant.
+It allows you to visually design and export light schedules (keyframes, interpolation, transitions).
+
+Direct URL: `http://<your-ha-host>/keyframe_scheduler/index.html`
+
+> **Language:** The webapp UI is currently in German (DE).
 
 ---
 
