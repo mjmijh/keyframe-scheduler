@@ -1,1019 +1,2335 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Keyframe Scheduler: Kelvin + Dimmer (48h)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keyframe Scheduler - Lichtsteuerung</title>
   <style>
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
-    h1 { margin: 0 0 10px; font-size: 20px; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
-    .card { border: 1px solid rgba(128,128,128,.35); border-radius: 12px; padding: 12px; margin: 12px 0; }
-    label { display: block; font-size: 12px; opacity: .85; margin-bottom: 4px; }
-    input, select, button, textarea { font: inherit; padding: 6px 8px; border-radius: 10px; border: 1px solid rgba(128,128,128,.35); }
-    button { cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid rgba(128,128,128,.25); padding: 8px 6px; vertical-align: middle; }
-    th { text-align: left; font-size: 12px; opacity: .8; }
-    .small { font-size: 12px; opacity: .8; }
-    .danger { color: #b00020; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
-    canvas { width: 100%; max-height: 520px; }
-    .pill { display: inline-block; padding: 2px 8px; border: 1px solid rgba(128,128,128,.35); border-radius: 999px; font-size: 12px; opacity: .9; }
-    .hint { max-width: 980px; line-height: 1.4; }
-  
-    .handle { cursor: grab; user-select: none; font-size: 16px; padding: 0 6px; }
-    tr.dragging { opacity: 0.5; }
-</style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f5;
+      --bg-card: #ffffff;
+      --text-primary: #1a1a1a;
+      --text-secondary: #666666;
+      --border: #e0e0e0;
+      --accent: #2196F3;
+      --accent-hover: #1976D2;
+      --danger: #f44336;
+      --success: #4CAF50;
+      --warning: #ff9800;
+      --shadow: 0 2px 8px rgba(0,0,0,0.1);
+      --radius: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2a2a2a;
+        --bg-card: #2a2a2a;
+        --text-primary: #ffffff;
+        --text-secondary: #b0b0b0;
+        --border: #404040;
+        --shadow: 0 2px 8px rgba(0,0,0,0.5);
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title-icon {
+      font-size: 20px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    input, select, button {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      border: none;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    button.secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover {
+      background: var(--border);
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    button.success {
+      background: var(--success);
+    }
+
+    button.small {
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .keyframes-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .keyframes-table th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 12px 8px;
+      border-bottom: 2px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .keyframes-table td {
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .keyframes-table tr:hover {
+      background: var(--bg-secondary);
+    }
+
+    .keyframes-table input,
+    .keyframes-table select {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+
+    .keyframes-table input[type="number"] {
+      width: 80px;
+    }
+
+    .keyframes-table input[type="time"] {
+      width: 100px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      font-size: 18px;
+      color: var(--text-secondary);
+      user-select: none;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .row-number {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin-top: 16px;
+    }
+
+    canvas {
+      max-height: 100%;
+    }
+
+    .info-box {
+      background: var(--bg-secondary);
+      border-left: 4px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+
+    .info-box.warning {
+      border-left-color: var(--warning);
+    }
+
+    .info-box strong {
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.instant {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .badge.transition {
+      background: #f3e5f5;
+      color: #6a1b9a;
+    }
+
+    .badge.interpolate {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .badge.instant {
+        background: #1565c0;
+        color: #e3f2fd;
+      }
+      .badge.transition {
+        background: #6a1b9a;
+        color: #f3e5f5;
+      }
+      .badge.interpolate {
+        background: #2e7d32;
+        color: #e8f5e9;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    details {
+      margin-top: 16px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 10px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius);
+      user-select: none;
+    }
+
+    summary:hover {
+      background: var(--border);
+    }
+
+    .json-box {
+      width: 100%;
+      min-height: 200px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+      padding: 12px;
+      margin-top: 12px;
+      resize: vertical;
+      background: var(--bg-secondary);
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .stat-item {
+      display: flex;
+      gap: 6px;
+    }
+
+    .stat-label {
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .keyframes-table {
+        font-size: 12px;
+      }
+
+      .keyframes-table th,
+      .keyframes-table td {
+        padding: 8px 4px;
+      }
+    }
+
+    .mode-help {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-  <h1>Keyframe Scheduler: Kelvin + Dimmer (48 Stunden, ≥ variabel (1–60 Min)-Schritt)</h1>
+  <div class="container">
+    <header>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h1>ð Keyframe Scheduler</h1>
+          <p class="subtitle" id="subtitle-text">Erstelle dynamische Lichtsteuerung mit Farbtemperatur und Helligkeit</p>
+        </div>
+        <div class="btn-group" style="margin: 0;">
+          <button id="langDe" class="success" style="padding: 8px 16px;" onclick="setLanguage('de')">
+            DE
+          </button>
+          <button id="langEn" class="secondary" style="padding: 8px 16px;" onclick="setLanguage('en')">
+            EN
+          </button>
+          <button id="langEs" class="secondary" style="padding: 8px 16px;" onclick="setLanguage('es')">
+            ES
+          </button>
+        </div>
+      </div>
+    </header>
 
-  <div class="card">
-    <div class="row">
-      <div>
-        <label>Startzeit (für Plot)</label>
-        <input id="startDateTime" type="datetime-local" />
-      </div>
-      <div>
-        <label>Zeitschritt (Minuten, min. 5)</label>
-        <input id="stepMinutes" type="number" min="1" step="1" value="5" />
-      </div>
-      <div>
-        <label>Horizont</label>
-        <select id="horizonHours">
-          <option value="48" selected>48 Stunden</option>
-          <option value="24">24 Stunden</option>
-          <option value="72">72 Stunden</option>
-        </select>
-      </div>
-      <div>
-        <label>Wrap-Around (letzter → erster)</label>
-        <select id="wrapAround">
-          <option value="yes" selected>ja</option>
-          <option value="no">nein</option>
-        </select>
-      </div>
-      <div>
-        <button id="recalcBtn">Neu berechnen</button>
-      </div>
-      <div class="small">
-        <span class="pill">Kurve: linear / sinus</span>
-        <span class="pill">Transition-Parameter gehören zum Ziel-Keyframe</span>
-      </div>
-    </div>
+    <script>
+    function switchLanguage(lang) {
+      const filename = lang === 'en' ? 'webapp_en.html' : 'webapp.html';
+      // For local files, replace the current filename
+      const current = window.location.href;
+      const lastSlash = current.lastIndexOf('/');
+      const lastBackslash = current.lastIndexOf('\\');
+      const sep = Math.max(lastSlash, lastBackslash);
+      if (sep > 0) {
+        window.location.href = current.substring(0, sep + 1) + filename;
+      } else {
+        window.location.href = filename;
+      }
+    }
+    </script>
 
-    <div class="small hint" style="margin-top:8px;">
-      <b>Semantik:</b> Die Einstellungen in einer Zeile gehören <b>zu diesem Zeitpunkt</b> (Ziel-Keyframe B):<br>
-      • <span class="mono">offset &lt; 0</span>: Transition startet <span class="mono">|offset|</span> Minuten <i>vor</i> B, Zielwert ist <b>am Zeitpunkt B</b> erreicht.<br>
-      • <span class="mono">offset &gt; 0</span>: Transition startet <b>am Zeitpunkt B</b>, Zielwert ist <span class="mono">offset</span> Minuten <i>nach</i> B erreicht.<br>
-      • <span class="mono">offset = 0</span>: harter Sprung am Zeitpunkt B.<br>
-      Alternative: <b>KF→KF</b> ignoriert Offset und interpoliert über das ganze Intervall vom vorherigen Keyframe bis B.<br>Bei <b>Überschneidungen</b> gewinnt standardmäßig der <b>frühere Eintrag in der Tabelle</b> (Keyframe #1 hat höchste Priorität).
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="row">
-      <div>
-        <label>Preset</label>
-        <select id="preset">
-          <option value="example" selected>Beispiel (06:00/08:00/20:00/23:00)</option>
-          <option value="two">2 Keyframes (06:00/23:00)</option>
-          <option value="empty">Leer</option>
-        </select>
-      </div>
-      <div>
-        <button id="loadPresetBtn">Preset laden</button>
-      </div>
-      <div class="small">
-        Tipp: Wenn der Wert um 23:00 erreicht sein soll, setze beim 23:00-Keyframe z.B. <span class="mono">offset=-30</span>.
-      </div>
-    </div>
-
-    <div style="overflow:auto; margin-top:10px;">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th></th>
-            <th>Zeit (HH:MM)</th>
-            <th>Kelvin</th>
-            <th>Dim (%)</th>
-            <th>Kurve</th>
-            <th>Übergang</th>
-            <th>Offset (h:m:s)</th>
-            <th>Fadezeit (s)</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="kfBody"></tbody>
-      </table>
-    </div>
-
-    <div class="row" style="margin-top:10px;">
-      <button id="addRowBtn">+ Keyframe</button>
-      <button id="sortBtn">Nach Zeit sortieren</button>
-      <button id="pdfBtn">PDF Export</button>
-      <span id="msg" class="small"></span>
-    </div>
-
-    <details style="margin-top:10px;">
-      <summary class="small">Keyframes als JSON (Import/Export)</summary>
-      <div class="row" style="margin-top:8px;">
-        <textarea id="jsonBox" rows="7" style="width:100%;" class="mono"></textarea>
+    <!-- Settings Card -->
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-icon">âï¸</span>
+        <span id="card-title-settings">Einstellungen</span>
       </div>
       
-      <div class="row">
-        <button id="exportJsonBtn">Text laden</button>
-        <button id="importJsonBtn">Text anwenden</button>
-        <button id="downloadKeyframesBtn">Datei speichern (.json)</button>
-        <button id="importKeyframesFileBtn">Datei laden (.json)</button>
-        <input id="keyframesFileInput" type="file" accept="application/json" style="display:none;">
+      <!-- Schedule Name -->
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label for="scheduleName" id="label-schedule-name">Schedule Name</label>
+        <input type="text" id="scheduleName" value="My Schedule" 
+               placeholder="My Schedule"
+               maxlength="50"
+               oninput="updateScheduleName(this.value)"
+               style="font-size: 16px; font-weight: 500;">
+        <small id="help-schedule-name" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block;">
+          Wird fÃ¼r JSON-Dateinamen und PDF-Titel verwendet
+        </small>
       </div>
-      <div class="small">Format: Array von Objekten: <span class="mono">time, kelvin, dim, curve, mode, offsetMin</span></div>
-    
+      
+      <div class="grid grid-3">
+        <div class="form-group">
+          <label for="stepMinutes" id="label-step-minutes">Aktualisierung (Minuten)</label>
+          <input type="number" id="stepMinutes" min="1" max="60" value="5">
+          <small id="help-step-minutes" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block; line-height: 1.4;"><!-- Filled by updateHelpTexts() --></small>
+        </div>
+
+        <div class="form-group">
+          <label for="horizonHours" id="label-horizon-hours">Vorschau-Zeitraum</label>
+          <select id="horizonHours">
+            <option value="24" id="opt-24h">24 Stunden</option>
+            <option value="48" selected id="opt-48h">48 Stunden</option>
+            <option value="72" id="opt-72h">72 Stunden</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="wrapAround" id="label-wrap-around">Wiederholung</label>
+          <select id="wrapAround">
+            <option value="true" selected id="opt-repeat-daily">TÃ¤glich wiederholen</option>
+            <option value="false" id="opt-repeat-once">Einmalig</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="info-box" id="keyframe-tip" style="margin-top: 16px;"><!-- Filled by updateTip() --></div>
+    </div>
+
+    <!-- Keyframes Card -->
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-icon">â±ï¸</span>
+        <span id="card-title-keyframes">Keyframes</span>
+      </div>
+
+      <div class="btn-group">
+        <button id="addKeyframeBtn">
+          â Keyframe hinzufÃ¼gen
+        </button>
+        <button class="secondary" id="sortByTimeBtn">
+          ð Nach Zeit sortieren
+        </button>
+        <button class="secondary" id="loadPresetBtn">
+          ð Beispiel laden
+        </button>
+        <button class="secondary" id="loadFileBtn">
+          ð Datei laden
+        </button>
+      </div>
+      <input type="file" id="fileInputTop" accept=".json" style="display: none;">
+
+      <div id="keyframesContainer">
+        <!-- Table will be inserted here -->
+      </div>
+
+      <div class="info-box" id="info-box">
+        <!-- Will be populated by updateInfoBox() -->
+      </div>
+    </div>
+
+    <!-- Chart Card -->
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-icon">ð</span>
+        <span id="card-title-preview">Vorschau</span>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="chart"></canvas>
+      </div>
+
+      <div class="stats" id="stats">
+        <!-- Stats will be inserted here -->
+      </div>
+
+      <div class="btn-group" style="margin-top: 16px;">
+        <button class="secondary" id="downloadCsvBtn">
+          ð CSV Export
+        </button>
+      </div>
+    </div>
+
+    <!-- Export/Import Card -->
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-icon">ð¾</span>
+        <span id="card-title-export">Export & Import</span>
+      </div>
+
+      <div class="btn-group">
+        <button class="success" id="downloadJsonBtn">
+          â¬ï¸ Als Datei speichern
+        </button>
+        <button class="secondary" id="downloadPdfBtn">
+          ð PDF Export
+        </button>
+      </div>
+      <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+      <details>
+        <summary id="json-summary">JSON anzeigen/bearbeiten</summary>
+        <textarea id="jsonOutput" class="json-box" readonly></textarea>
+        <div class="btn-group" style="margin-top: 12px;">
+          <button class="small secondary" id="importFromTextBtn">
+            <span id="btn-import-json">â¬ï¸ JSON Ã¼bernehmen</span>
+          </button>
+        </div>
       </details>
-    <details style="margin-top:10px;">
-      <summary class="small">Home Assistant JSON (Spec v1, Export)</summary>
-      <div class="row" style="margin-top:8px;">
-        <textarea id="haBox" rows="9" style="width:100%;" class="mono" placeholder='{"version":1,...}'></textarea>
+      
+      <div id="workflow-box" style="background: #d1ecf1; border: 1px solid #0c5460; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 13px;">
+        <!-- Will be populated by updateWorkflowBox() -->
       </div>
-      <div class="row">
-        <button id="exportHaJsonBtn">HA JSON erzeugen</button>
-        <button id="importHaJsonBtn">HA JSON anwenden</button>
-        <button id="downloadHaJsonBtn">Datei speichern (.json)</button>
-      </div>
-    </details>
-
-  </div>
-
-  <div class="card">
-    <canvas id="chart"></canvas>
-    <div class="small" id="stats"></div>
-    <div class="small danger" id="errors"></div>
-
-    <details style="margin-top:10px;">
-      <summary class="small">Debug: Werte um 23:00 (Preset „2 Keyframes“)</summary>
-      <div class="small mono" id="debugBox" style="white-space:pre; margin-top:8px;"></div>
-    </details>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
-    // ---------------- Utils ----------------
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const pad2 = (n) => String(n).padStart(2, "0");
+    // ============================================================================
+    // CONSTANTS & UTILS
+    // ============================================================================
 
-    function parseHHMM(s) {
-      const m = /^(\d{1,2}):(\d{2})$/.exec(String(s).trim());
-      if (!m) return null;
-      const hh = Number(m[1]), mm = Number(m[2]);
-      if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
-      return hh * 60 + mm;
+    const STORAGE_KEY = 'keyframe_scheduler_data';
+    const PRESETS = {
+      example: [
+        { time: "06:00", kelvin: 2700, dim: 30, mode: "transition", transitionSeconds: 1800, transitionDirection: "before", curve: "sinus" },
+        { time: "08:00", kelvin: 5000, dim: 100, mode: "interpolate", transitionSeconds: 300, transitionDirection: "after", curve: "linear" },
+        { time: "20:00", kelvin: 3500, dim: 70, mode: "interpolate", transitionSeconds: 600, transitionDirection: "after", curve: "sinus" },
+        { time: "23:00", kelvin: 2700, dim: 20, mode: "transition", transitionSeconds: 900, transitionDirection: "before", curve: "linear" }
+      ]
+    };
+
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const pad2 = n => String(n).padStart(2, '0');
+
+    function parseTime(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
     }
 
-    function easeSinus(u) {
-      return (1 - Math.cos(Math.PI * clamp(u, 0, 1))) / 2;
+    function formatTime(minutes) {
+      const h = Math.floor(minutes / 60) % 24;
+      const m = minutes % 60;
+      return `${pad2(h)}:${pad2(m)}`;
     }
 
-    function lerp(a, b, u) {
-      return a + (b - a) * u;
+    function easeSinus(t) {
+      return (1 - Math.cos(Math.PI * clamp(t, 0, 1))) / 2;
     }
 
-    function interpValue(curve, u) {
-      return (curve === "sinus") ? easeSinus(u) : clamp(u, 0, 1);
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
     }
 
-    // ---------------- Presets ----------------
-    function presetExample() {
-      return [
-        { time: "06:00", kelvin: 4000, dim: 80,  curve: "sinus",  mode: "offset", offsetMin: -15 },
-        { time: "08:00", kelvin: 5000, dim: 100, curve: "sinus",  mode: "full",   offsetMin: 0   },
-        { time: "20:00", kelvin: 3500, dim: 70,  curve: "linear", mode: "offset", offsetMin: -20 },
-        { time: "23:00", kelvin: 2700, dim: 20,  curve: "linear", mode: "offset", offsetMin: +30 },
-      ];
+    // ============================================================================
+    // STATE MANAGEMENT
+    // ============================================================================
+
+    let state = {
+      scheduleName: 'My Schedule',  // NEW: User-defined schedule name
+      stepMinutes: 5,
+      horizonHours: 48,
+      wrapAround: true,
+      keyframes: []
+    };
+
+    // ============================================================================
+    // i18n TRANSLATION SYSTEM  
+    // ============================================================================
+    
+// Complete i18n translations for Keyframe Scheduler
+const translations = {
+  de: {
+    // Header
+    subtitle: "Erstelle dynamische Lichtsteuerung mit Farbtemperatur und Helligkeit",
+    
+    // Card titles
+    settings: "Einstellungen",
+    schedule_name_label: "Schedule Name",
+    schedule_name_help: "Wird fÃ¼r JSON-Dateinamen und PDF-Titel verwendet",
+    keyframes: "Keyframes",
+    preview: "Vorschau",
+    export_import: "Export & Import",
+    
+    // Settings
+    step_minutes_label: "Aktualisierung (Minuten)",
+    horizon_hours_label: "Vorschau-Zeitraum",
+    wrap_around_label: "Wiederholung",
+    
+    // Buttons
+    add_keyframe: "â Keyframe hinzufÃ¼gen",
+    sort_by_time: "ð Nach Zeit sortieren",
+    load_example: "ð Beispiel laden",
+    load_file: "ð Datei laden",
+    save_file: "â¬ï¸ Als Datei speichern",
+    pdf_export: "ð PDF Export",
+    csv_export: "ð CSV Export",
+    show_json: "JSON anzeigen/bearbeiten",
+    import_text: "â¬ï¸ JSON Ã¼bernehmen",
+    
+    // Table headers
+    th_time: "ZEIT",
+    th_kelvin: "KELVIN",
+    th_brightness: "HELLIGKEIT %",
+    th_mode: "MODUS",
+    th_transition: "TRANSITION (H:M:S)",
+    th_direction: "RICHTUNG",
+    th_curve: "KURVE",
+    
+    // Modes
+    mode_instant: "Instant",
+    mode_transition: "Transition",
+    mode_interpolate: "Interpolate",
+    
+    // Directions
+    dir_after: "Nach KF",
+    dir_before: "Vor KF",
+    
+    // Curves
+    curve_sinus: "Sinus",
+    curve_linear: "Linear",
+    
+    // Info box
+    info_modes_title: "Modi erklÃ¤rt:",
+    info_instant: "Sofortiger Sprung zum Zielwert zur angegebenen Zeit",
+    info_transition: "Sanfte Ãberblendung zum Zielwert mit einstellbarer Dauer (H:M:S Format)",
+    info_transition_after: "Transition startet zur angegebenen Zeit",
+    info_transition_before: "Transition endet zur angegebenen Zeit (startet frÃ¼her)",
+    info_transition_curve: "Kurve: Linear (gleichmÃ¤Ãig) oder Sinus (sanfter Start/Ende)",
+    info_interpolate: "Durchgehende Interpolation vom vorherigen Keyframe",
+    info_interpolate_curve: "Kurve: Linear oder Sinus fÃ¼r den gesamten Ãbergang",
+    info_transition_time: "ð¡ Transition-Zeit:",
+    info_interpolate_time: "Verwendet automatisch die Aktualisierungszeit (z.B. 5 Min = 0:05:00)",
+    info_transition_any: "Beliebige Zeit mÃ¶glich (z.B. 0:00:30 fÃ¼r DALI, 0:30:00 fÃ¼r lange ÃbergÃ¤nge)",
+    
+    // Workflow
+    workflow_title: "ð Workflow fÃ¼r Home Assistant:",
+    workflow_step1: "klicken â JSON-Datei herunterladen",
+    workflow_step2: "JSON-Datei hochladen â Senden",
+    workflow_step3: "â ï¸ <strong>Integration neu laden!</strong>",
+    workflow_step3_detail: "MenÃ¼ â Integration neu laden",
+    
+    // Chart
+    chart_brightness: "Helligkeit % (normalisiert)",
+    chart_kelvin: "Kelvin (normalisiert 2000-6500K)",
+    
+    // Stats
+    stats_keyframes: "Keyframes:",
+    stats_kelvin: "Ã Kelvin:",
+    stats_brightness: "Ã Helligkeit:",
+    stats_transition: "Ã Transition:",
+    
+    // Empty state
+    empty_message: "Klicke auf \"Keyframe hinzufÃ¼gen\" oder \"Beispiel laden\"",
+    
+    // PDF
+    pdf_title: "Keyframe Scheduler - Zeitplan",
+    pdf_created: "Erstellt am:",
+    pdf_keyframes_title: "Keyframes",
+    pdf_time: "Zeit",
+    pdf_kelvin: "Kelvin",
+    pdf_brightness: "Helligkeit",
+    pdf_mode: "Modus",
+    pdf_transition: "Transition",
+    pdf_curve: "Kurve",
+    pdf_preview: "Vorschau-Diagramm",
+    pdf_explanations: "Modi erklÃ¤rt",
+    pdf_instant_title: "Instant",
+    pdf_instant_desc: "Sofortiger Sprung zum Zielwert zur angegebenen Zeit.",
+    pdf_transition_title: "Transition",
+    pdf_transition_desc: "Sanfte Ãberblendung zum Zielwert mit einstellbarer Dauer (H:M:S Format).\nâ¢ Nach KF: Transition startet zur angegebenen Zeit\nâ¢ Vor KF: Transition endet zur angegebenen Zeit (startet frÃ¼her)",
+    pdf_interpolate_title: "Interpolate",
+    pdf_interpolate_desc: "Durchgehende Interpolation vom vorherigen Keyframe zum nÃ¤chsten interpolate Keyframe.\nBerÃ¼cksichtigt automatisch Transitions dazwischen.",
+    pdf_curves_title: "Kurven",
+    pdf_linear_title: "Linear",
+    pdf_linear_desc: "GleichmÃ¤Ãiger Ãbergang - konstante Geschwindigkeit.",
+    pdf_sinus_title: "Sinus",
+    pdf_sinus_desc: "Sanfter Ãbergang - langsam am Anfang und Ende, schnell in der Mitte.",
+    pdf_transition_time_title: "Transition-Zeit",
+    pdf_interpolate_time_desc: "Verwendet automatisch die Aktualisierungszeit (z.B. 5 Min = 0:05:00)",
+    pdf_transition_any_desc: "Beliebige Zeit mÃ¶glich (z.B. 0:00:30 fÃ¼r DALI, 0:30:00 fÃ¼r lange ÃbergÃ¤nge)",
+    
+    // Dropdown options
+    hours_24: "24 Stunden",
+    hours_48: "48 Stunden",
+    hours_72: "72 Stunden",
+    repeat_daily: "TÃ¤glich wiederholen",
+    repeat_once: "Einmalig",
+    
+    // Help texts
+    help_step_minutes: "Bestimmt die HÃ¤ufigkeit der Updates in Home Assistant und die Standard-Transition-Zeit.",
+    help_standard_transition: "Standard-Transition:",
+    help_example: "Beispiel:",
+    help_transition_note: "(Aktualisierung Ã 60) Sekunden",
+    help_transition_example: "5 Minuten = 300s Transition (auÃer im Keyframe kÃ¼rzer angegeben)",
+    tip_title: "ð¡ Tipp:",
+    tip_text: "Die Reihenfolge der Keyframes bestimmt ihre PrioritÃ¤t bei Ãberschneidungen. Verwende das â®â® Symbol zum Verschieben."
+  },
+  
+  en: {
+    // Header
+    subtitle: "Create dynamic light control with color temperature and brightness",
+    
+    // Card titles
+    settings: "Settings",
+    schedule_name_label: "Schedule Name",
+    schedule_name_help: "Used for JSON filenames and PDF title",
+    keyframes: "Keyframes",
+    preview: "Preview",
+    export_import: "Export & Import",
+    
+    // Settings
+    step_minutes_label: "Update Interval (Minutes)",
+    horizon_hours_label: "Preview Duration (Hours)",
+    wrap_around_label: "24h Repeat",
+    
+    // Buttons
+    add_keyframe: "â Add Keyframe",
+    sort_by_time: "ð Sort by Time",
+    load_example: "ð Load Example",
+    load_file: "ð Load File",
+    save_file: "â¬ï¸ Save as File",
+    pdf_export: "ð PDF Export",
+    csv_export: "ð CSV Export",
+    show_json: "Show/Edit JSON",
+    import_text: "â¬ï¸ Import JSON",
+    
+    // Table headers
+    th_time: "TIME",
+    th_kelvin: "KELVIN",
+    th_brightness: "BRIGHTNESS %",
+    th_mode: "MODE",
+    th_transition: "TRANSITION (H:M:S)",
+    th_direction: "DIRECTION",
+    th_curve: "CURVE",
+    
+    // Modes
+    mode_instant: "Instant",
+    mode_transition: "Transition",
+    mode_interpolate: "Interpolate",
+    
+    // Directions
+    dir_after: "After KF",
+    dir_before: "Before KF",
+    
+    // Curves
+    curve_sinus: "Sine",
+    curve_linear: "Linear",
+    
+    // Info box
+    info_modes_title: "Modes Explained:",
+    info_instant: "Immediate jump to target value at specified time",
+    info_transition: "Smooth transition to target value with adjustable duration (H:M:S format)",
+    info_transition_after: "Transition starts at specified time",
+    info_transition_before: "Transition ends at specified time (starts earlier)",
+    info_transition_curve: "Curve: Linear (uniform) or Sine (smooth start/end)",
+    info_interpolate: "Continuous interpolation from previous keyframe",
+    info_interpolate_curve: "Curve: Linear or Sine for entire transition",
+    info_transition_time: "ð¡ Transition Time:",
+    info_interpolate_time: "Automatically uses update time (e.g. 5 min = 0:05:00)",
+    info_transition_any: "Any time possible (e.g. 0:00:30 for DALI, 0:30:00 for long transitions)",
+    
+    // Workflow
+    workflow_title: "ð Workflow for Home Assistant:",
+    workflow_step1: "click â Download JSON file",
+    workflow_step2: "Upload JSON file â Send",
+    workflow_step3: "â ï¸ <strong>Reload Integration!</strong>",
+    workflow_step3_detail: "Menu â Reload Integration",
+    
+    // Chart
+    chart_brightness: "Brightness % (normalized)",
+    chart_kelvin: "Kelvin (normalized 2000-6500K)",
+    
+    // Stats
+    stats_keyframes: "Keyframes:",
+    stats_kelvin: "Ã Kelvin:",
+    stats_brightness: "Ã Brightness:",
+    stats_transition: "Ã Transition:",
+    
+    // Empty state
+    empty_message: "Click \"Add Keyframe\" or \"Load Example\"",
+    
+    // PDF
+    pdf_title: "Keyframe Scheduler - Schedule",
+    pdf_created: "Created on:",
+    pdf_keyframes_title: "Keyframes",
+    pdf_time: "Time",
+    pdf_kelvin: "Kelvin",
+    pdf_brightness: "Brightness",
+    pdf_mode: "Mode",
+    pdf_transition: "Transition",
+    pdf_curve: "Curve",
+    pdf_preview: "Preview Chart",
+    pdf_explanations: "Modes Explained",
+    pdf_instant_title: "Instant",
+    pdf_instant_desc: "Immediate jump to target value at specified time.",
+    pdf_transition_title: "Transition",
+    pdf_transition_desc: "Smooth transition to target value with adjustable duration (H:M:S format).\nâ¢ After KF: Transition starts at specified time\nâ¢ Before KF: Transition ends at specified time (starts earlier)",
+    pdf_interpolate_title: "Interpolate",
+    pdf_interpolate_desc: "Continuous interpolation from previous keyframe to next interpolate keyframe.\nAutomatically accounts for transitions in between.",
+    pdf_curves_title: "Curves",
+    pdf_linear_title: "Linear",
+    pdf_linear_desc: "Uniform transition - constant speed.",
+    pdf_sinus_title: "Sine",
+    pdf_sinus_desc: "Smooth transition - slow at start and end, fast in the middle.",
+    pdf_transition_time_title: "Transition Time",
+    pdf_interpolate_time_desc: "Automatically uses update time (e.g. 5 min = 0:05:00)",
+    pdf_transition_any_desc: "Any time possible (e.g. 0:00:30 for DALI, 0:30:00 for long transitions)",
+    
+    // Dropdown options
+    hours_24: "24 Hours",
+    hours_48: "48 Hours",
+    hours_72: "72 Hours",
+    repeat_daily: "Repeat Daily",
+    repeat_once: "Once",
+    
+    // Help texts
+    help_step_minutes: "Determines the frequency of updates in Home Assistant and the default transition time.",
+    help_standard_transition: "Default Transition:",
+    help_example: "Example:",
+    help_transition_note: "(Update Interval Ã 60) seconds",
+    help_transition_example: "5 minutes = 300s transition (unless shorter specified in keyframe)",
+    tip_title: "ð¡ Tip:",
+    tip_text: "The order of keyframes determines their priority when overlapping. Use the â®â® symbol to reorder."
+  },
+  
+  es: {
+    // Header
+    subtitle: "Crea control de iluminaciÃ³n dinÃ¡mico con temperatura de color y brillo",
+    
+    // Card titles
+    settings: "ConfiguraciÃ³n",
+    schedule_name_label: "Nombre del horario",
+    schedule_name_help: "Se utiliza para nombres de archivos JSON y tÃ­tulo de PDF",
+    keyframes: "Keyframes",
+    preview: "Vista Previa",
+    export_import: "Exportar e Importar",
+    
+    // Settings
+    step_minutes_label: "Intervalo de ActualizaciÃ³n (Minutos)",
+    horizon_hours_label: "DuraciÃ³n de Vista Previa (Horas)",
+    wrap_around_label: "RepeticiÃ³n 24h",
+    
+    // Buttons
+    add_keyframe: "â AÃ±adir Keyframe",
+    sort_by_time: "ð Ordenar por Tiempo",
+    load_example: "ð Cargar Ejemplo",
+    load_file: "ð Cargar Archivo",
+    save_file: "â¬ï¸ Guardar como Archivo",
+    pdf_export: "ð Exportar PDF",
+    csv_export: "ð Exportar CSV",
+    show_json: "Mostrar/Editar JSON",
+    import_text: "â¬ï¸ Importar JSON",
+    
+    // Table headers
+    th_time: "TIEMPO",
+    th_kelvin: "KELVIN",
+    th_brightness: "BRILLO %",
+    th_mode: "MODO",
+    th_transition: "TRANSICIÃN (H:M:S)",
+    th_direction: "DIRECCIÃN",
+    th_curve: "CURVA",
+    
+    // Modes
+    mode_instant: "InstantÃ¡neo",
+    mode_transition: "TransiciÃ³n",
+    mode_interpolate: "Interpolar",
+    
+    // Directions
+    dir_after: "DespuÃ©s KF",
+    dir_before: "Antes KF",
+    
+    // Curves
+    curve_sinus: "Sinusoidal",
+    curve_linear: "Lineal",
+    
+    // Info box
+    info_modes_title: "Modos Explicados:",
+    info_instant: "Salto inmediato al valor objetivo en el tiempo especificado",
+    info_transition: "TransiciÃ³n suave al valor objetivo con duraciÃ³n ajustable (formato H:M:S)",
+    info_transition_after: "La transiciÃ³n comienza en el tiempo especificado",
+    info_transition_before: "La transiciÃ³n termina en el tiempo especificado (comienza antes)",
+    info_transition_curve: "Curva: Lineal (uniforme) o Sinusoidal (inicio/fin suave)",
+    info_interpolate: "InterpolaciÃ³n continua desde el keyframe anterior",
+    info_interpolate_curve: "Curva: Lineal o Sinusoidal para toda la transiciÃ³n",
+    info_transition_time: "ð¡ Tiempo de TransiciÃ³n:",
+    info_interpolate_time: "Usa automÃ¡ticamente el tiempo de actualizaciÃ³n (ej. 5 min = 0:05:00)",
+    info_transition_any: "Cualquier tiempo posible (ej. 0:00:30 para DALI, 0:30:00 para transiciones largas)",
+    
+    // Workflow
+    workflow_title: "ð Flujo de Trabajo para Home Assistant:",
+    workflow_step1: "hacer clic â Descargar archivo JSON",
+    workflow_step2: "Subir archivo JSON â Enviar",
+    workflow_step3: "â ï¸ <strong>Â¡Recargar IntegraciÃ³n!</strong>",
+    workflow_step3_detail: "MenÃº â Recargar IntegraciÃ³n",
+    
+    // Chart
+    chart_brightness: "Brillo % (normalizado)",
+    chart_kelvin: "Kelvin (normalizado 2000-6500K)",
+    
+    // Stats
+    stats_keyframes: "Keyframes:",
+    stats_kelvin: "Ã Kelvin:",
+    stats_brightness: "Ã Brillo:",
+    stats_transition: "Ã TransiciÃ³n:",
+    
+    // Empty state
+    empty_message: "Haz clic en \"AÃ±adir Keyframe\" o \"Cargar Ejemplo\"",
+    
+    // PDF
+    pdf_title: "Keyframe Scheduler - Horario",
+    pdf_created: "Creado el:",
+    pdf_keyframes_title: "Keyframes",
+    pdf_time: "Tiempo",
+    pdf_kelvin: "Kelvin",
+    pdf_brightness: "Brillo",
+    pdf_mode: "Modo",
+    pdf_transition: "TransiciÃ³n",
+    pdf_curve: "Curva",
+    pdf_preview: "GrÃ¡fico de Vista Previa",
+    pdf_explanations: "Modos Explicados",
+    pdf_instant_title: "InstantÃ¡neo",
+    pdf_instant_desc: "Salto inmediato al valor objetivo en el tiempo especificado.",
+    pdf_transition_title: "TransiciÃ³n",
+    pdf_transition_desc: "TransiciÃ³n suave al valor objetivo con duraciÃ³n ajustable (formato H:M:S).\nâ¢ DespuÃ©s KF: La transiciÃ³n comienza en el tiempo especificado\nâ¢ Antes KF: La transiciÃ³n termina en el tiempo especificado (comienza antes)",
+    pdf_interpolate_title: "Interpolar",
+    pdf_interpolate_desc: "InterpolaciÃ³n continua desde el keyframe anterior al siguiente keyframe de interpolaciÃ³n.\nConsidera automÃ¡ticamente las transiciones intermedias.",
+    pdf_curves_title: "Curvas",
+    pdf_linear_title: "Lineal",
+    pdf_linear_desc: "TransiciÃ³n uniforme - velocidad constante.",
+    pdf_sinus_title: "Sinusoidal",
+    pdf_sinus_desc: "TransiciÃ³n suave - lento al principio y al final, rÃ¡pido en el medio.",
+    pdf_transition_time_title: "Tiempo de TransiciÃ³n",
+    pdf_interpolate_time_desc: "Usa automÃ¡ticamente el tiempo de actualizaciÃ³n (ej. 5 min = 0:05:00)",
+    pdf_transition_any_desc: "Cualquier tiempo posible (ej. 0:00:30 para DALI, 0:30:00 para transiciones largas)",
+    
+    // Dropdown options
+    hours_24: "24 Horas",
+    hours_48: "48 Horas",
+    hours_72: "72 Horas",
+    repeat_daily: "Repetir Diariamente",
+    repeat_once: "Una Vez",
+    
+    // Help texts
+    help_step_minutes: "Determina la frecuencia de actualizaciones en Home Assistant y el tiempo de transiciÃ³n predeterminado.",
+    help_standard_transition: "TransiciÃ³n Predeterminada:",
+    help_example: "Ejemplo:",
+    help_transition_note: "(Intervalo de ActualizaciÃ³n Ã 60) segundos",
+    help_transition_example: "5 minutos = 300s transiciÃ³n (a menos que se especifique mÃ¡s corto en el keyframe)",
+    tip_title: "ð¡ Consejo:",
+    tip_text: "El orden de los keyframes determina su prioridad cuando se superponen. Usa el sÃ­mbolo â®â® para reordenar."
+
+  }
+};
+
+    
+    let currentLang = localStorage.getItem('keyframe_scheduler_lang') || 'de';
+    
+    function t(key) {
+      return translations[currentLang]?.[key] || key;
     }
-
-    function presetTwo() {
-      return [
-        { time: "06:00", kelvin: 4000, dim: 80, curve: "linear", mode: "offset", offsetMin: -30 },
-        { time: "23:00", kelvin: 2700, dim: 20, curve: "linear", mode: "offset", offsetMin: +30 },
-      ];
-    }
-
-    // ---------------- UI ----------------
-    const kfBody = document.getElementById("kfBody");
-    const msg = document.getElementById("msg");
-    const errorsEl = document.getElementById("errors");
-    const statsEl = document.getElementById("stats");
-    const jsonBox = document.getElementById("jsonBox");
-
-
-    // --- Drag & Drop Reordering (row order = priority) ---
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll("tr:not(.dragging)")];
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - (box.top + box.height / 2);
-        if (offset < 0 && offset > closest.offset) {
-          return { offset, element: child };
-        } else {
-          return closest;
-        }
-      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
-    }
-
-    kfBody.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      const dragging = kfBody.querySelector("tr.dragging");
-      if (!dragging) return;
-      const afterEl = getDragAfterElement(kfBody, e.clientY);
-      if (afterEl == null) {
-        kfBody.appendChild(dragging);
-      } else {
-        kfBody.insertBefore(dragging, afterEl);
-      }
-    });
-
-    kfBody.addEventListener("drop", (e) => {
-      e.preventDefault();
-      const dragging = kfBody.querySelector("tr.dragging");
-      if (dragging) dragging.classList.remove("dragging");
-      renumber();
-      recalcAndRender();
-      exportHaJsonToBox();
-    });
-
-
-    function renumber() {
-      [...kfBody.querySelectorAll("tr")].forEach((tr, i) => tr.querySelector(".idx").textContent = String(i + 1));
-    }
-
-    function addRow(kf) {
-      const tr = document.createElement("tr");
-      tr.draggable = true;
+    
+    function updateInfoBox() {
+      const infoBox = document.getElementById('info-box');
+      if (!infoBox) return;
       
-      const _sec = Math.round((kf.offsetMin || 0) * 60);
-      const _sign = _sec < 0 ? -1 : 1;
-      const _abs = Math.abs(_sec);
-      const offsetH = Math.floor(_abs / 3600) * _sign;
-      const offsetM = Math.floor((_abs % 3600) / 60);
-      const offsetS = Math.floor(_abs % 60);
-
-      const _stepMin = Number(document.getElementById("stepMinutes")?.value || 5) || 5;
-      const fadeSeconds = (kf.fadeSeconds != null && Number.isFinite(Number(kf.fadeSeconds)))
-        ? Math.max(0, Math.round(Number(kf.fadeSeconds)))
-        : Math.max(0, Math.round(_stepMin * 60));
-
-tr.innerHTML = `
-        <td class="mono idx"></td><td class="handle" title="Ziehen zum Umsortieren" aria-label="Ziehen zum Umsortieren">⋮⋮</td>
-        <td><input class="time" type="text" value="${kf.time ?? "06:00"}" placeholder="HH:MM" style="width:80px;"></td>
-        <td><input class="kelvin" type="number" min="1000" max="10000" step="50" value="${kf.kelvin ?? 4000}" style="width:90px;"></td>
-        <td><input class="dim" type="number" min="0" max="100" step="1" value="${kf.dim ?? 80}" style="width:70px;"></td>
-        <td>
-          <select class="curve">
-            <option value="linear" ${kf.curve === "linear" ? "selected" : ""}>linear</option>
-            <option value="sinus" ${kf.curve === "sinus" ? "selected" : ""}>sinus</option>
-          </select>
-        </td>
-        <td>
-          <select class="mode">
-            <option value="offset" ${kf.mode === "offset" ? "selected" : ""}>Offset</option>
-            <option value="full" ${kf.mode === "full" ? "selected" : ""}>KF→KF</option>
-          </select>
-        </td>
-        <td style="white-space:nowrap;"><input class="offsetH" type="number" style="width:60px" value="${offsetH}"> <input class="offsetM" type="number" min="0" max="59" style="width:60px" value="${offsetM}"> <input class="offsetS" type="number" min="0" max="59" style="width:60px" value="${offsetS}"></td><td><input class="fadeSec" type="number" min="0" step="1" style="width:90px" title="Fadezeit in Sekunden (für HA)" value="${fadeSeconds}"></td>
-        <td><button class="delBtn">✕</button></td>
+      infoBox.innerHTML = `
+        <strong>${t('info_modes_title')}</strong><br>
+        <span class="badge instant">${t('mode_instant')}</span> ${t('info_instant')}<br>
+        <span class="badge transition">${t('mode_transition')}</span> ${t('info_transition')}<br>
+        â¢ <strong>${t('dir_after')}</strong>: ${t('info_transition_after')}<br>
+        â¢ <strong>${t('dir_before')}</strong>: ${t('info_transition_before')}<br>
+        â¢ <strong>${t('pdf_curve')}</strong>: ${t('info_transition_curve')}<br>
+        <span class="badge interpolate">${t('mode_interpolate')}</span> ${t('info_interpolate')}<br>
+        â¢ <strong>${t('pdf_curve')}</strong>: ${t('info_interpolate_curve')}<br>
+        <br>
+        <strong>${t('info_transition_time')}</strong><br>
+        â¢ <strong>${t('mode_interpolate')}:</strong> ${t('info_interpolate_time')}<br>
+        â¢ <strong>${t('mode_transition')}/${t('mode_instant')}:</strong> ${t('info_transition_any')}
       `;
-
-      // Drag behavior: only start dragging when grabbing the handle
-      const handle = tr.querySelector(".handle");
-      handle.addEventListener("mousedown", () => { handle.style.cursor = "grabbing"; });
-      handle.addEventListener("mouseup", () => { handle.style.cursor = "grab"; });
-
-      tr.addEventListener("dragstart", (e) => {
-        // Some browsers require setting data
-        e.dataTransfer.setData("text/plain", "row");
-        tr.classList.add("dragging");
+    }
+    
+    function updateWorkflowBox() {
+      const workflowBox = document.getElementById('workflow-box');
+      if (!workflowBox) return;
+      
+      workflowBox.innerHTML = `
+        <strong>${t('workflow_title')}</strong><br>
+        1. <strong>"${t('save_file')}"</strong> ${t('workflow_step1')}<br>
+        2. In HA: <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">${t('settings')} â Keyframe Scheduler â Options</code><br>
+        3. <strong>${t('workflow_step2')}</strong><br>
+        4. ${t('workflow_step3')} <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">â® ${t('workflow_step3_detail')}</code>
+      `;
+    }
+    
+    function updateDropdowns() {
+      // Update horizon hours options
+      const opt24 = document.getElementById('opt-24h');
+      const opt48 = document.getElementById('opt-48h');
+      const opt72 = document.getElementById('opt-72h');
+      if (opt24) opt24.textContent = t('hours_24');
+      if (opt48) opt48.textContent = t('hours_48');
+      if (opt72) opt72.textContent = t('hours_72');
+      
+      // Update wrap around options
+      const optDaily = document.getElementById('opt-repeat-daily');
+      const optOnce = document.getElementById('opt-repeat-once');
+      if (optDaily) optDaily.textContent = t('repeat_daily');
+      if (optOnce) optOnce.textContent = t('repeat_once');
+    }
+    
+    function updateTip() {
+      const tipBox = document.getElementById('keyframe-tip');
+      if (tipBox) {
+        tipBox.innerHTML = `<strong>${t('tip_title')}</strong> ${t('tip_text')}`;
+      }
+    }
+    
+    function updateHelpTexts() {
+      const helpScheduleName = document.getElementById('help-schedule-name');
+      if (helpScheduleName) {
+        helpScheduleName.textContent = t('schedule_name_help');
+      }
+      
+      const helpStepMinutes = document.getElementById('help-step-minutes');
+      if (helpStepMinutes) {
+        helpStepMinutes.innerHTML = `
+          ${t('help_step_minutes')}<br>
+          <strong>${t('help_standard_transition')}</strong> ${t('help_transition_note')}<br>
+          <strong>${t('help_example')}</strong> ${t('help_transition_example')}
+        `;
+      }
+    }
+    
+    function updateButtons() {
+      // Update card titles
+      document.getElementById('card-title-settings').textContent = t('settings');
+      document.getElementById('card-title-keyframes').textContent = t('keyframes');
+      document.getElementById('card-title-preview').textContent = t('preview');
+      document.getElementById('card-title-export').textContent = t('export_import');
+      
+      // Update settings labels
+      const labelScheduleName = document.getElementById('label-schedule-name');
+      const labelStepMinutes = document.getElementById('label-step-minutes');
+      const labelHorizonHours = document.getElementById('label-horizon-hours');
+      const labelWrapAround = document.getElementById('label-wrap-around');
+      
+      if (labelScheduleName) labelScheduleName.textContent = t('schedule_name_label');
+      if (labelStepMinutes) labelStepMinutes.textContent = t('step_minutes_label');
+      if (labelHorizonHours) labelHorizonHours.textContent = t('horizon_hours_label');
+      if (labelWrapAround) labelWrapAround.textContent = t('wrap_around_label');
+      
+      // Update dropdowns
+      updateDropdowns();
+      
+      // Update tip
+      updateTip();
+      
+      // Update help texts
+      updateHelpTexts();
+      
+      // Update workflow title
+      const workflowTitle = document.getElementById('workflow-title');
+      if (workflowTitle) workflowTitle.innerHTML = t('workflow_title');
+      
+      // Update JSON section
+      const jsonSummary = document.getElementById('json-summary');
+      if (jsonSummary) jsonSummary.textContent = t('show_json');
+      
+      const btnImportJson = document.getElementById('btn-import-json');
+      if (btnImportJson) btnImportJson.textContent = t('import_text');
+      
+      // Update all button texts
+      document.getElementById('addKeyframeBtn').textContent = t('add_keyframe');
+      document.getElementById('sortByTimeBtn').textContent = t('sort_by_time');
+      document.getElementById('loadPresetBtn').textContent = t('load_example');
+      document.getElementById('loadFileBtn').textContent = t('load_file');
+      document.getElementById('downloadJsonBtn').textContent = t('save_file');
+      document.getElementById('downloadPdfBtn').textContent = t('pdf_export');
+      document.getElementById('downloadCsvBtn').textContent = t('csv_export');
+    }
+    
+    function setLanguage(lang) {
+      if (!translations[lang]) return;
+      
+      currentLang = lang;
+      localStorage.setItem('keyframe_scheduler_lang', lang);
+      
+      // Update language buttons
+      ['De', 'En', 'Es'].forEach(l => {
+        const btn = document.getElementById('lang' + l);
+        const isActive = l.toLowerCase() === lang;
+        btn.classList.toggle('success', isActive);
+        btn.classList.toggle('secondary', !isActive);
       });
-      tr.addEventListener("dragend", () => {
-        tr.classList.remove("dragging");
-        handle.style.cursor = "grab";
-      });
+      
+      // Update subtitle
+      document.getElementById('subtitle-text').textContent = t('subtitle');
+      
+      // Update buttons
+      updateButtons();
+      
+      // Update info box
+      updateInfoBox();
+      
+      // Update workflow box
+      updateWorkflowBox();
+      
+      // Re-render everything with new language
+      renderKeyframes();
+      renderChart();
+      updateJsonOutput();
+    }
+    
 
-      // Prevent dragging when starting from inputs/selects (keep UX sane)
-      tr.querySelectorAll("input,select,button").forEach(el => {
-        el.addEventListener("dragstart", (ev) => ev.preventDefault());
-      });
-      // Require handle to initiate drag
-      tr.addEventListener("mousedown", (ev) => {
-        if (!ev.target.classList.contains("handle")) {
-          tr.draggable = false;
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          state = JSON.parse(saved);
+          updateUI();
         } else {
-          tr.draggable = true;
+          // Load example preset on first visit
+          loadPreset('example');
         }
-      });
-      tr.addEventListener("mouseup", () => { tr.draggable = true; });
-
-      const modeSel = tr.querySelector(".mode");
-      const offsetHIn=tr.querySelector(".offsetH"),offsetMIn=tr.querySelector(".offsetM"),offsetSIn=tr.querySelector(".offsetS");
-      function updateDisable() { offsetHIn.disabled=offsetMIn.disabled=offsetSIn.disabled=(modeSel.value==="full"); }
-      modeSel.addEventListener("change", () => { updateDisable(); recalcAndRender(); });
-      updateDisable();
-
-      tr.querySelector(".delBtn").addEventListener("click", () => {
-        tr.remove();
-        renumber();
-        recalcAndRender();
-      });
-
-      tr.querySelectorAll("input,select").forEach(el => el.addEventListener("change", recalcAndRender));
-
-      kfBody.appendChild(tr);
+      } catch (e) {
+        console.error('Failed to load state:', e);
+      }
     }
 
-    function getKeyframesFromUI() {
-      const rows = [...kfBody.querySelectorAll("tr")];
-      return rows.map((tr, idx) => ({
-        __prio: idx,
-        time: tr.querySelector(".time").value.trim(),
-        kelvin: Number(tr.querySelector(".kelvin").value),
-        dim: Number(tr.querySelector(".dim").value),
-        curve: tr.querySelector(".curve").value,
-        mode: tr.querySelector(".mode").value,
-        offsetMin:(function(){
-        const h=Number(tr.querySelector(".offsetH").value||0);
-        const m=Number(tr.querySelector(".offsetM").value||0);
-        const s=Number(tr.querySelector(".offsetS").value||0);
-        const sign=(h<0||m<0||s<0)?-1:1;
-        return (Math.abs(h)*3600+Math.abs(m)*60+Math.abs(s))*sign/60;
-      })(),
-          fadeSeconds: (function(){
-            const step = Number(document.getElementById("stepMinutes")?.value || 5) || 5;
-            const v = Number(tr.querySelector(".fadeSec")?.value);
-            return Number.isFinite(v) ? Math.max(0, Math.round(v)) : Math.max(0, Math.round(step*60));
-          })(),
-      }));
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to save state:', e);
+      }
     }
 
-    function setKeyframesToUI(kfs) {
-      kfBody.innerHTML = "";
-      kfs.forEach(addRow);
-      renumber();
-      recalcAndRender();
+    function updateUI() {
+      document.getElementById('stepMinutes').value = state.stepMinutes;
+      document.getElementById('horizonHours').value = state.horizonHours;
+      document.getElementById('wrapAround').value = state.wrapAround;
+      document.getElementById('scheduleName').value = state.scheduleName || 'My Schedule';
+      renderKeyframes();
+      renderChart();
+      updateJsonOutput();
+    }
+    
+    function updateScheduleName(value) {
+      state.scheduleName = value.trim() || 'My Schedule';
+      saveState();
+    }
+
+    // ============================================================================
+    // KEYFRAME MANAGEMENT
+    // ============================================================================
+
+    function addKeyframe() {
+      const now = new Date();
+      const time = `${pad2(now.getHours())}:00`;
+      
+      state.keyframes.push({
+        time,
+        kelvin: 4000,
+        dim: 80,
+        mode: 'instant',
+        transitionSeconds: 300,
+        transitionDirection: 'after',
+        curve: 'linear'
+      });
+      
+      saveState();
+      updateUI();
+    }
+
+    function deleteKeyframe(index) {
+      if (confirm('Keyframe wirklich lÃ¶schen?')) {
+        state.keyframes.splice(index, 1);
+        saveState();
+        updateUI();
+      }
+    }
+
+    function updateKeyframe(index, field, value) {
+      if (!state.keyframes[index]) return;
+      
+      if (field === 'kelvin') {
+        value = clamp(parseInt(value) || 2000, 2000, 6500);
+      } else if (field === 'dim') {
+        value = clamp(parseInt(value) || 0, 0, 100);
+      } else if (field === 'transitionSeconds') {
+        const numValue = parseInt(value) || 0;
+        // If negative value, convert to positive and set direction to "before"
+        if (numValue < 0) {
+          state.keyframes[index].transitionSeconds = Math.abs(numValue);
+          state.keyframes[index].transitionDirection = 'before';
+          saveState();
+          updateUI();
+          return;
+        }
+        value = Math.max(0, numValue);
+      }
+      
+      state.keyframes[index][field] = value;
+      saveState();
+      
+      // For text input fields: don't re-render table, only update chart/json
+      // This preserves focus in input fields
+      if (field === 'time' || field === 'kelvin' || field === 'dim') {
+        // Debounced chart update to avoid too many updates while typing
+        if (window.chartUpdateTimeout) clearTimeout(window.chartUpdateTimeout);
+        window.chartUpdateTimeout = setTimeout(() => {
+          renderChart();
+          updateJsonOutput();
+        }, 300); // Wait 300ms after last keystroke
+      } else {
+        // For dropdowns (mode, curve, direction): full update is OK
+        updateUI();
+      }
+    }
+
+    function updateTransitionTime(index, container) {
+      const inputs = container.querySelectorAll('input[type="number"]');
+      const hours = Math.max(0, Math.min(23, parseInt(inputs[0].value) || 0));
+      const minutes = Math.max(0, Math.min(59, parseInt(inputs[1].value) || 0));
+      const seconds = Math.max(0, Math.min(59, parseInt(inputs[2].value) || 0));
+      
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      
+      state.keyframes[index].transitionSeconds = totalSeconds;
+      saveState();
+      updateUI();
+    }
+
+    function handleTransitionInput(index, inputElement) {
+      const value = parseInt(inputElement.value);
+      if (!isNaN(value) && value < 0) {
+        // Live feedback: change direction dropdown immediately
+        state.keyframes[index].transitionDirection = 'before';
+      }
     }
 
     function sortKeyframesByTime() {
-      const kfs = getKeyframesFromUI();
-      kfs.sort((a, b) => (parseHHMM(a.time) ?? 0) - (parseHHMM(b.time) ?? 0));
-      setKeyframesToUI(kfs);
-      msg.textContent = "Sortiert.";
-      setTimeout(() => msg.textContent = "", 1200);
+      state.keyframes.sort((a, b) => parseTime(a.time) - parseTime(b.time));
+      saveState();
+      updateUI();
     }
 
-    // ---------------- Validation & schedule ----------------
-    function validateKeyframes(kfs) {
-      const errs = [];
-      if (kfs.length < 2) errs.push("Mindestens 2 Keyframes benötigt.");
-      const seen = new Set();
-      kfs.forEach((kf, i) => {
-        const t = parseHHMM(kf.time);
-        if (t === null) errs.push(`Keyframe #${i+1}: ungültige Zeit "${kf.time}"`);
-        else {
-          if (seen.has(t)) errs.push("Doppelte Zeitpunkte sind nicht erlaubt (gleiche HH:MM).");
-          seen.add(t);
-        }
-        if (!Number.isFinite(kf.kelvin) || kf.kelvin < 1000 || kf.kelvin > 10000) errs.push(`Keyframe #${i+1}: Kelvin ungültig (1000..10000)`);
-        if (!Number.isFinite(kf.dim) || kf.dim < 0 || kf.dim > 100) errs.push(`Keyframe #${i+1}: Dim ungültig (0..100)`);
-        if (!["linear","sinus"].includes(kf.curve)) errs.push(`Keyframe #${i+1}: Kurve ungültig`);
-        if (!["offset","full"].includes(kf.mode)) errs.push(`Keyframe #${i+1}: Übergang ungültig`);
-        if (kf.mode === "offset" && !Number.isFinite(kf.offsetMin)) errs.push(`Keyframe #${i+1}: Offset ungültig`);
-      });
-      return errs;
+    function loadPreset(presetName) {
+      if (PRESETS[presetName]) {
+        state.keyframes = JSON.parse(JSON.stringify(PRESETS[presetName]));
+        saveState();
+        updateUI();
+      }
     }
 
-    function buildDailyTimelineKeyframes(kfs) {
-      return kfs.map(k => ({ ...k, tMin: parseHHMM(k.time) })).sort((a,b) => a.tMin - b.tMin);
-    }
+    // ============================================================================
+    // RENDERING
+    // ============================================================================
 
-    // Build an absolute (multi-day) schedule so midnight crossings are boring again.
-    // All times are in "minutes since startDate".
-    function buildAbsSchedule(kfsSorted, startDate, horizonMin, wrap) {
-      const dayStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
-      const startOffset = Math.round((startDate.getTime() - dayStart.getTime()) / 60000); // minutes from dayStart to startDate
-      const maxPosOffset = Math.max(...kfsSorted.map(k => (k.mode === "offset" && k.offsetMin > 0) ? k.offsetMin : 0), 0);
-      const lookahead = horizonMin + maxPosOffset + 1440; // safe extra day
-
-      const daysMin = wrap ? -1 : 0;
-      const daysMax = Math.ceil((lookahead + startOffset) / 1440) + 1;
-
-      const kfsAbs = [];
-      for (let d = daysMin; d <= daysMax; d++) {
-        for (const k of kfsSorted) {
-          kfsAbs.push({
-            ...k,
-            timeAbs: d * 1440 + k.tMin - startOffset,
-          });
-        }
-      }
-      kfsAbs.sort((a,b) => a.timeAbs - b.timeAbs);
-
-      // Build transition windows for each keyframe as TARGET (B), with its PREV (A).
-      // For "full": transition runs from A.timeAbs -> B.timeAbs.
-      // For "offset":
-      //   offset<0: [B.timeAbs+offset, B.timeAbs]
-      //   offset>0: [B.timeAbs, B.timeAbs+offset]
-      //   offset=0: instantaneous at B.timeAbs
-      const trans = [];
-      for (let i = 0; i < kfsAbs.length; i++) {
-        const B = kfsAbs[i];
-        const A = (i > 0) ? kfsAbs[i-1] : null;
-        if (!A) continue;
-
-        let tStart, tEnd, mode = B.mode;
-
-        if (mode === "full") {
-          tStart = A.timeAbs;
-          tEnd = B.timeAbs;
-          if (tEnd < tStart) continue;
-          trans.push({ A, B, tStart, tEnd, kind: "full" });
-          continue;
-        }
-
-        const o = Number.isFinite(B.offsetMin) ? B.offsetMin : 0;
-        if (o < 0) { tStart = B.timeAbs + o; tEnd = B.timeAbs; }
-        else if (o > 0) { tStart = B.timeAbs; tEnd = B.timeAbs + o; }
-        else { tStart = B.timeAbs; tEnd = B.timeAbs; }
-
-        trans.push({ A, B, tStart, tEnd, kind: "offset" });
+    function renderKeyframes() {
+      const container = document.getElementById('keyframesContainer');
+      
+      if (state.keyframes.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">â±ï¸</div>
+            <p>${t('empty_message')}</p>
+          </div>
+        `;
+        return;
       }
 
-      // Reach time of B (when B is "fully active")
-      function reachTime(B) {
-        if (B.mode === "full") return B.timeAbs;
-        if (B.mode === "offset" && Number.isFinite(B.offsetMin) && B.offsetMin > 0) return B.timeAbs + B.offsetMin;
-        return B.timeAbs;
-      }
-
-      // Precompute reach times list for fast lookup
-      const reach = kfsAbs.map(B => ({ t: reachTime(B), B })).sort((x,y) => x.t - y.t);
-
-      return { kfsAbs, trans, reach, wrap };
-    }
-
-    let SCHEDULE = null;
-
-    function valueAtMinuteAbs(m) {
-      if (!SCHEDULE) return { kelvin: 0, dim: 0 };
-      const { trans, reach } = SCHEDULE;
-
-      // 1) If inside a transition window, resolve overlaps by priority.
-      // Priority rule: smaller B.__prio wins (earlier row in the table = higher priority).
-      // If equal priority, choose the window with the earlier tEnd.
-      let best = null;
-      for (const w of trans) {
-        if (w.tStart === w.tEnd) continue; // instantaneous handled via reach logic
-        if (m >= w.tStart && m < w.tEnd) {
-          if (!best) { best = w; continue; }
-          const pBest = Number.isFinite(best.B.__prio) ? best.B.__prio : 1e9;
-          const pW = Number.isFinite(w.B.__prio) ? w.B.__prio : 1e9;
-          if (pW < pBest) { best = w; continue; }
-          if (pW === pBest && w.tEnd < best.tEnd) { best = w; continue; }
-        }
-      }
-      if (best) {
-        const { A, B, tStart, tEnd } = best;
-        const u = (m - tStart) / (tEnd - tStart);
-        const s = interpValue(B.curve, u);
-        return { kelvin: lerp(A.kelvin, B.kelvin, s), dim: lerp(A.dim, B.dim, s) };
-      }
-
-      // 2) Not in transition: return the latest reached keyframe value (max reachTime <= m)
-      let lo = 0, hi = reach.length - 1, ans = -1;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        if (reach[mid].t <= m) { ans = mid; lo = mid + 1; }
-        else hi = mid - 1;
-      }
-      if (ans >= 0) {
-        const B = reach[ans].B;
-        return { kelvin: B.kelvin, dim: B.dim };
-      }
-
-      // 3) Before everything: fall back to the earliest keyframe's value
-      const first = reach[0]?.B;
-      return { kelvin: first ? first.kelvin : 0, dim: first ? first.dim : 0 };
-    }
-
-    // ---------------- Chart ----------------
-    let chart;
-    function renderChart(labels, kelvinArr, dimArr) {
-      const ctx = document.getElementById("chart").getContext("2d");
-      if (chart) chart.destroy();
-
-      chart = new Chart(ctx, {
-        type: "line",
-        data: { labels, datasets: [
-          { label: "Kelvin", data: kelvinArr, yAxisID: "yK", pointRadius: 2, pointHoverRadius: 5, borderWidth: 2, tension: 0 },
-          { label: "Dim (%)", data: dimArr, yAxisID: "yD", pointRadius: 2, pointHoverRadius: 5, borderWidth: 2, tension: 0 },
-        ]},
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          plugins: {
-            legend: { display: true },
-            tooltip: { callbacks: {
-              label: (ctx) => (ctx.dataset.yAxisID === "yK")
-                ? ` Kelvin: ${Math.round(ctx.parsed.y)} K`
-                : ` Dim: ${Math.round(ctx.parsed.y)} %`
-            }}
-          },
-          scales: {
-            x: { ticks: { maxTicksLimit: 12, callback: function(value) {
-              const lbl = this.getLabelForValue ? this.getLabelForValue(value) : "";
-              return String(lbl).replace(" ", "\n");
-            }}},
-            yK: { position: "left", title: { display: true, text: "Kelvin" }, suggestedMin: 2000, suggestedMax: 7000 },
-            yD: { position: "right", title: { display: true, text: "Dim (%)" }, suggestedMin: 0, suggestedMax: 100, grid: { drawOnChartArea: false } }
-          }
-        }
-      });
-    }
-
-    // ---------------- Main calc ----------------
-    function recalcAndRender() {
-      errorsEl.textContent = "";
-      statsEl.textContent = "";
-
-      const stepMin = Math.max(1, Number(document.getElementById("stepMinutes").value || 1));
-      document.getElementById("stepMinutes").value = stepMin;
-
-      const horizon = Number(document.getElementById("horizonHours").value || 48);
-      const wrap = document.getElementById("wrapAround").value === "yes";
-
-      const startDTStr = document.getElementById("startDateTime").value;
-      const startDate = startDTStr ? new Date(startDTStr) : new Date();
-      if (Number.isNaN(startDate.getTime())) { errorsEl.textContent = "Ungültige Startzeit."; return; }
-
-      const kfs = getKeyframesFromUI();
-      const errs = validateKeyframes(kfs);
-      if (errs.length) { errorsEl.innerHTML = errs.map(e => `• ${e}`).join("<br>"); return; }
-
-      const kfsSorted = buildDailyTimelineKeyframes(kfs);
-
-      const horizonMin = horizon * 60;
-      SCHEDULE = buildAbsSchedule(kfsSorted, startDate, horizonMin, wrap);
-
-      const totalMinutes = horizon * 60;
-      const labels = [];
-      const kelvinArr = [];
-      const dimArr = [];
-
-      for (let m = 0; m <= totalMinutes; m += stepMin) {
-        const dt = new Date(startDate.getTime() + m * 60000);
-        const dayOffset = Math.floor((dt - startDate) / (24 * 3600 * 1000));
-        labels.push(`D${dayOffset} ${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`);
-
-        const v = valueAtMinuteAbs(m);
-        kelvinArr.push(v.kelvin);
-        dimArr.push(v.dim);
-      }
-
-      renderChart(labels, kelvinArr, dimArr);
-
-      const minK = Math.min(...kelvinArr), maxK = Math.max(...kelvinArr);
-      const minD = Math.min(...dimArr), maxD = Math.max(...dimArr);
-      statsEl.textContent =
-        `Berechnet: ${labels.length} Punkte @ ${stepMin} min, Horizont ${horizon}h. ` +
-        `Kelvin: ${Math.round(minK)}..${Math.round(maxK)} K, Dim: ${Math.round(minD)}..${Math.round(maxD)} %.`;
-
-      jsonBox.value = JSON.stringify(getKeyframesFromUI(), null, 2);
-      // Debug block: show values from 22:30..23:30 in stepMin increments (using current keyframes)
-      const dbg = document.getElementById("debugBox");
-      if (dbg) {
-        const times = [];
-        // compute minutes from startDate to today 22:30..23:30 (same day as startDate)
-        const base = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
-        const minsFromStart = (dt) => Math.round((dt.getTime() - startDate.getTime()) / 60000);
-        const t0 = new Date(base.getTime() + (22*60 + 30) * 60000);
-        const t1 = new Date(base.getTime() + (23*60 + 30) * 60000);
-        let lines = [];
-        lines.push("Zeit\tKelvin\tDim");
-        for (let tt = new Date(t0); tt <= t1; tt = new Date(tt.getTime() + stepMin * 60000)) {
-          const m = Math.round((tt.getTime() - startDate.getTime()) / 60000);
-          const v = valueAtMinuteAbs(m);
-          lines.push(`${pad2(tt.getHours())}:${pad2(tt.getMinutes())}\t${Math.round(v.kelvin)}\t${Math.round(v.dim)}`);
-        }
-        dbg.textContent = lines.join("\n");
-      }
-
-    }
-
-    // ---------------- Buttons & init ----------------
-    document.getElementById("addRowBtn").addEventListener("click", () => {
-      addRow({ time: "12:00", kelvin: 4500, dim: 100, curve: "sinus", mode: "offset", offsetMin: -15 });
-      renumber(); recalcAndRender();
-    });
-
-    document.getElementById("sortBtn").addEventListener("click", sortKeyframesByTime);
-    document.getElementById("recalcBtn").addEventListener("click", recalcAndRender);
-
-    document.getElementById("loadPresetBtn").addEventListener("click", () => {
-      const p = document.getElementById("preset").value;
-      if (p === "empty") setKeyframesToUI([]);
-      else if (p === "two") setKeyframesToUI(presetTwo());
-      else setKeyframesToUI(presetExample());
-    });
-
-    document.getElementById("exportJsonBtn").addEventListener("click", () => {
-      jsonBox.value = JSON.stringify(getKeyframesFromUI(), null, 2);
-      // Debug block: show values from 22:30..23:30 in stepMin increments (using current keyframes)
-      const dbg = document.getElementById("debugBox");
-      if (dbg) {
-        const times = [];
-        // compute minutes from startDate to today 22:30..23:30 (same day as startDate)
-        const base = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
-        const minsFromStart = (dt) => Math.round((dt.getTime() - startDate.getTime()) / 60000);
-        const t0 = new Date(base.getTime() + (22*60 + 30) * 60000);
-        const t1 = new Date(base.getTime() + (23*60 + 30) * 60000);
-        let lines = [];
-        lines.push("Zeit\tKelvin\tDim");
-        for (let tt = new Date(t0); tt <= t1; tt = new Date(tt.getTime() + stepMin * 60000)) {
-          const m = Math.round((tt.getTime() - startDate.getTime()) / 60000);
-          const v = valueAtMinuteAbs(m);
-          lines.push(`${pad2(tt.getHours())}:${pad2(tt.getMinutes())}\t${Math.round(v.kelvin)}\t${Math.round(v.dim)}`);
-        }
-        dbg.textContent = lines.join("\n");
-      }
-
-      msg.textContent = "Exportiert in JSON-Box.";
-      setTimeout(() => msg.textContent = "", 1200);
-    });
-
-    document.getElementById("importJsonBtn").addEventListener("click", () => {
-      try {
-        const arr = JSON.parse(jsonBox.value);
-        if (!Array.isArray(arr)) throw new Error("JSON ist kein Array.");
-        setKeyframesToUI(arr);
-        msg.textContent = "Import ok.";
-        setTimeout(() => msg.textContent = "", 1200);
-      } catch (e) {
-        errorsEl.textContent = "Import-Fehler: " + e.message;
-      }
-    });
-
-    // Keyframes JSON Download/Import (file)
-    document.getElementById("downloadKeyframesBtn").addEventListener("click", () => {
-      downloadKeyframesJsonFile();
-      msg.textContent = "Keyframes JSON Download gestartet.";
-      setTimeout(() => msg.textContent = "", 1400);
-    });
-
-    const kfFileInput = document.getElementById("keyframesFileInput");
-    document.getElementById("importKeyframesFileBtn").addEventListener("click", () => {
-      kfFileInput.value = "";
-      kfFileInput.click();
-    });
-
-    kfFileInput.addEventListener("change", async () => {
-      try {
-        const file = kfFileInput.files && kfFileInput.files[0];
-        await importKeyframesJsonFile(file);
-        msg.textContent = "Keyframes aus Datei importiert.";
-        setTimeout(() => msg.textContent = "", 1600);
-      } catch (e) {
-        errorsEl.textContent = "Keyframes-Datei Import-Fehler: " + (e.message || e);
-      }
-    });
-
-
-    
-    
-    function buildHaSpec(){
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Berlin";
-      const stepMinEl = document.getElementById("stepMinutes");
-      const horizonEl = document.getElementById("horizonHours");
-      const wrapEl = document.getElementById("wrapAround");
-      const startEl = document.getElementById("startDateTime");
-
-      const stepMinutes = Math.max(1, Number(stepMinEl ? stepMinEl.value : 5) || 5);
-      const horizonHours = Number(horizonEl ? horizonEl.value : 48) || 48;
-      const wrapAround = (wrapEl ? wrapEl.value : "yes") === "yes";
-      const startDateTime = startEl ? (startEl.value || null) : null;
-
-      return{
-        version:1,
-        timezone:tz,
-        stepMinutes,
-        horizonHours,
-        wrapAround,
-        startDateTime,
-        keyframes:getKeyframesFromUI().map(k=>({
-          time:k.time,kelvin:k.kelvin,dim:k.dim,curve:k.curve,mode:k.mode,
-          offsetMin:k.offsetMin,
-          offsetSeconds:Math.round(k.offsetMin*60),
-          fadeSeconds:k.fadeSeconds
-        }))
-      };
-    }
-
-    function exportHaJsonToBox(){
-      document.getElementById("haBox").value=JSON.stringify(buildHaSpec(),null,2);
-    }
-
-
-    // --- HA JSON Import (Spec v1) ---
-    function importHaJsonFromBox(){
-      const raw = (document.getElementById("haBox").value || "").trim();
-      if(!raw){ throw new Error("haBox ist leer."); }
-      const obj = JSON.parse(raw);
-      if(Number(obj.version||1)!==1){ throw new Error("Unsupported version (erwartet 1)."); }
-
-      // Optional: apply step/horizon/wrap/start if UI elements exist
-      if (obj.stepMinutes != null && document.getElementById("stepMinutes")) {
-        document.getElementById("stepMinutes").value = String(Math.max(1, Math.min(60, Number(obj.stepMinutes)||5)));
-      }
-      if (obj.horizonHours != null && document.getElementById("horizonHours")) {
-        document.getElementById("horizonHours").value = String(Number(obj.horizonHours)||48);
-      }
-      if (obj.wrapAround != null && document.getElementById("wrapAround")) {
-        document.getElementById("wrapAround").value = obj.wrapAround ? "yes" : "no";
-      }
-      if (obj.startDateTime != null && document.getElementById("startDateTime")) {
-        document.getElementById("startDateTime").value = obj.startDateTime || "";
-      }
-
-      // Keyframes: accept offsetSeconds if present; else fall back to offsetMin if present
-      const kfs = (obj.keyframes||[]).map(k => ({
-        time: k.time,
-        kelvin: Number(k.kelvin),
-        dim: Number(k.dim),
-        curve: k.curve || "linear",
-        mode: k.mode || "offset",
-        offsetMin: (k.offsetSeconds != null) ? (Number(k.offsetSeconds)/60) : Number(k.offsetMin||0),
-        fadeSeconds: (k.fadeSeconds != null) ? Math.max(0, Math.round(Number(k.fadeSeconds))) : Math.max(0, Math.round((Number(obj.stepMinutes||5)||5)*60)),
-      }));
-
-      setKeyframesToUI(kfs); // keep incoming order as priority
-      recalcAndRender();
-      exportHaJsonToBox();
-    }
-
-    // --- LocalStorage caching ---
-    const LS_KEY = "keyframe_scheduler_v9_keyframes";
-    function saveKeyframesLocal(){
-      const payload = {
-        savedAt: new Date().toISOString(),
-        stepMinutes: document.getElementById("stepMinutes")?.value ?? null,
-        horizonHours: document.getElementById("horizonHours")?.value ?? null,
-        wrapAround: document.getElementById("wrapAround")?.value ?? null,
-        startDateTime: document.getElementById("startDateTime")?.value ?? null,
-        keyframes: getKeyframesFromUI()
-      };
-      localStorage.setItem(LS_KEY, JSON.stringify(payload));
-    }
-    function loadKeyframesLocal(){
-      const raw = localStorage.getItem(LS_KEY);
-      if(!raw){ throw new Error("Kein lokaler Speicher gefunden."); }
-      const payload = JSON.parse(raw);
-      if(payload.stepMinutes != null && document.getElementById("stepMinutes")) document.getElementById("stepMinutes").value = payload.stepMinutes;
-      if(payload.horizonHours != null && document.getElementById("horizonHours")) document.getElementById("horizonHours").value = payload.horizonHours;
-      if(payload.wrapAround != null && document.getElementById("wrapAround")) document.getElementById("wrapAround").value = payload.wrapAround;
-      if(payload.startDateTime != null && document.getElementById("startDateTime")) document.getElementById("startDateTime").value = payload.startDateTime;
-      setKeyframesToUI(payload.keyframes || []);
-      recalcAndRender();
-      exportHaJsonToBox();
-      return payload.savedAt || null;
-    }
-    function clearKeyframesLocal(){
-      localStorage.removeItem(LS_KEY);
-    }
-
-    document.getElementById("exportHaJsonBtn").addEventListener("click",exportHaJsonToBox);
-
-    document.getElementById("importHaJsonBtn").addEventListener("click", () => {
-      try {
-        importHaJsonFromBox();
-        msg.textContent = "HA JSON importiert.";
-        setTimeout(() => msg.textContent = "", 1200);
-      } catch (e) {
-        errorsEl.textContent = "HA-Import-Fehler: " + (e.message || e);
-      }
-    });
-
-    document.getElementById("downloadHaJsonBtn").addEventListener("click",()=>{
-      exportHaJsonToBox();
-      const a=document.createElement("a");
-      a.href=URL.createObjectURL(new Blob([document.getElementById("haBox").value],{type:"application/json"}));
-      a.download="ha_keyframe_schedule_v1.json";a.click();
-    });
-    
-    // --- Keyframes JSON file IO (array) ---
-    function _timestampForFilename() {
-      // YYYYMMDD_HHMMSS
-      const d = new Date();
-      const pad = (n) => String(n).padStart(2, "0");
-      return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-    }
-
-    function downloadKeyframesJsonFile() {
-      const kfs = getKeyframesFromUI();
-      const txt = JSON.stringify(kfs, null, 2);
-      const blob = new Blob([txt], { type: "application/json;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `keyframes_${_timestampForFilename()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    function importKeyframesJsonFile(file) {
-      return new Promise((resolve, reject) => {
-        if (!file) return reject(new Error("Keine Datei gewählt."));
-        const r = new FileReader();
-        r.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
-        r.onload = () => {
-          try {
-            const obj = JSON.parse(String(r.result || ""));
-            if (!Array.isArray(obj)) throw new Error("JSON muss ein Array von Keyframes sein.");
-            setKeyframesToUI(obj);
-            recalcAndRender();
-            // sync boxes
-            document.getElementById("jsonBox").value = JSON.stringify(getKeyframesFromUI(), null, 2);
-            if (typeof exportHaJsonToBox === "function") exportHaJsonToBox();
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        };
-        r.readAsText(file, "utf-8");
-      });
-    }
-
-    (function init() {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const isoLocal = new Date(start.getTime() - start.getTimezoneOffset()*60000).toISOString().slice(0,16);
-      document.getElementById("startDateTime").value = isoLocal;
-      setKeyframesToUI(presetExample());
-    })();
-  
-
-    // ---------------- PDF Export (Print-to-PDF) ----------------
-    function _escapeHtml(s) {
-      return String(s)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function buildPdfReportHtml() {
-      const kfs = getKeyframesFromUI();
-      const stepMin = Number(document.getElementById("stepMinutes")?.value || 5);
-      const horizonH = Number(document.getElementById("horizonHours")?.value || 48);
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
-      const now = new Date();
-
-      // Chart image (current canvas)
-      const canvas = document.getElementById("chart");
-      let chartDataUrl = "";
-      try {
-        chartDataUrl = canvas?.toDataURL("image/png") || "";
-      } catch(e) {}
-
-      const rows = kfs.map((k, i) => {
-  const mode = (k.mode === "full") ? "KF→KF" : "Offset";
-  const offsetSec = Math.round((Number(k.offsetMin || 0) || 0) * 60);
-
-  function fmtHmsSigned(totalSeconds) {
-    const sign = totalSeconds < 0 ? "-" : "";
-    const s = Math.abs(totalSeconds);
-    const hh = Math.floor(s / 3600);
-    const mm = Math.floor((s % 3600) / 60);
-    const ss = Math.floor(s % 60);
-    return `${sign}${hh.toString().padStart(2,"0")}:${mm.toString().padStart(2,"0")}:${ss.toString().padStart(2,"0")}`;
-  }
-
-  const offsetStr = (k.mode === "full") ? "—" : fmtHmsSigned(offsetSec);
-  const fadeStr = `${Number(k.fadeSeconds ?? 0)} s`;
-
-  return `
-    <tr>
-      <td>${i+1}</td>
-      <td>${_escapeHtml(k.time || "")}</td>
-      <td style="text-align:right">${Number(k.kelvin||0).toFixed(0)}</td>
-      <td style="text-align:right">${Number(k.dim||0).toFixed(0)}</td>
-      <td>${_escapeHtml(k.curve || "linear")}</td>
-      <td>${_escapeHtml(mode)}</td>
-      <td style="text-align:right">${_escapeHtml(offsetStr)}</td>
-      <td>${_escapeHtml(fadeStr)}</td>
-    </tr>
-  `;
-}).join("");
-
-      const intro = `
-        <h1>Keyframe Scheduler Report</h1>
-        <div class="meta">
-          <div><b>Erstellt:</b> ${now.toLocaleString()} (${_escapeHtml(tz)})</div>
-          <div><b>Plot:</b> ${horizonH} h Horizont, Raster ${stepMin} min</div>
-        </div>
-
-        <h2>Begriffe & Übergänge</h2>
-        <ul>
-          <li><b>Keyframe</b>: Definiert Zielwerte für <b>Kelvin</b> und <b>Dim (%)</b> zu einer Uhrzeit.</li>
-          <li><b>Übergang / Kurve</b>: Zwischen zwei Keyframes (KF→KF) wird immer vom <i>vorherigen</i> Keyframe auf den <i>aktuellen</i> Keyframe überblendet – <b>linear</b> (gleichmäßig) oder <b>sinus</b> (weich). In diesem Fall wird ein gesetzter <b>Offset ignoriert</b>.</li>
-          <li><b>Offset-Semantik</b>: <code>offset &lt; 0</code> ⇒ Zielwert ist <i>am</i> Keyframe-Zeitpunkt erreicht. <code>offset &gt; 0</code> ⇒ Zielwert wird <i>nach</i> dem Keyframe erreicht. Im Report wird Offset als <b>hh:mm:ss</b> angezeigt; im HA-Export zusätzlich als <code>offsetSeconds</code>.</li>
-          <li><b>Fadezeit</b>: Pro Keyframe kann eine Fadezeit (<b>Sekunden</b>) gesetzt werden. Standard = <b>Raster</b> (globaler Zeitschritt in Sekunden). Der Wert wird im Export (HA JSON) pro Keyframe als <code>fadeSeconds</code> mitgegeben.</li>
-          <li><b>Priorität</b>: Bei überlappenden Transitionen gewinnt der Keyframe mit höherer Priorität (Tabellenreihenfolge / Drag & Drop).</li>
-          <li><b>48h Plot</b>: Darstellung über eine absolute Zeitachse, um Mitternachts-Sprünge sauber zu behandeln.</li>
-        </ul>
-      `;
-
-      const table = `
-        <h2>Keyframe Liste (Priorität = Tabellenreihenfolge)</h2>
-        <table>
+      let html = `
+        <table class="keyframes-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Zeit</th>
-              <th>Kelvin</th>
-              <th>Dim %</th>
-              <th>Kurve</th>
-              <th>Übergang</th>
-              <th>Offset (hh:mm:ss)</th>
-              <th>Fade</th>
+              <th style="width: 40px;"></th>
+              <th style="width: 40px;">#</th>
+              <th style="width: 100px;">${t('th_time')}</th>
+              <th style="width: 100px;">${t('th_kelvin')}</th>
+              <th style="width: 100px;">${t('th_brightness')}</th>
+              <th style="width: 120px;">${t('th_mode')}</th>
+              <th style="width: 150px;">${t('th_transition')}</th>
+              <th style="width: 100px;">${t('th_direction')}</th>
+              <th style="width: 100px;">${t('th_curve')}</th>
+              <th style="width: 60px;"></th>
             </tr>
           </thead>
           <tbody>
-            ${rows || `<tr><td colspan="8" class="muted">Keine Keyframes</td></tr>`}
+      `;
+
+      state.keyframes.forEach((kf, index) => {
+        const showTransition = kf.mode === 'transition';
+        const showCurve = kf.mode === 'interpolate' || kf.mode === 'transition';  // Beide Modi!
+        
+        html += `
+          <tr draggable="true" data-index="${index}">
+            <td><span class="drag-handle">â®â®</span></td>
+            <td><span class="row-number">${index + 1}</span></td>
+            <td>
+              <input type="time" value="${kf.time}" 
+                     oninput="updateKeyframe(${index}, 'time', this.value)">
+            </td>
+            <td>
+              <input type="number" min="2000" max="6500" step="100" 
+                     value="${kf.kelvin}"
+                     oninput="updateKeyframe(${index}, 'kelvin', this.value)">
+            </td>
+            <td>
+              <input type="number" min="0" max="100" step="5" 
+                     value="${kf.dim}"
+                     oninput="updateKeyframe(${index}, 'dim', this.value)">
+            </td>
+            <td>
+              <select onchange="updateKeyframe(${index}, 'mode', this.value)">
+                <option value="instant" ${kf.mode === 'instant' ? 'selected' : ''}>${t('mode_instant')}</option>
+                <option value="transition" ${kf.mode === 'transition' ? 'selected' : ''}>${t('mode_transition')}</option>
+                <option value="interpolate" ${kf.mode === 'interpolate' ? 'selected' : ''}>${t('mode_interpolate')}</option>
+              </select>
+            </td>
+            <td style="${!showTransition ? 'opacity: 0.3;' : ''}">
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <input type="number" min="0" max="23" step="1" 
+                       value="${Math.floor(kf.transitionSeconds / 3600)}"
+                       ${!showTransition ? 'disabled' : ''}
+                       placeholder="H"
+                       title="${showTransition ? t('help_transition_note') || 'Stunden' : t('mode_interpolate') + ' - nicht verwendet'}"
+                       style="width: 45px;"
+                       onchange="updateTransitionTime(${index}, this.parentElement)">
+                <span style="opacity: 0.5;">:</span>
+                <input type="number" min="0" max="59" step="1" 
+                       value="${Math.floor((kf.transitionSeconds % 3600) / 60)}"
+                       ${!showTransition ? 'disabled' : ''}
+                       placeholder="M"
+                       title="${showTransition ? 'Minuten' : t('mode_interpolate') + ' - nicht verwendet'}"
+                       style="width: 45px;"
+                       onchange="updateTransitionTime(${index}, this.parentElement)">
+                <span style="opacity: 0.5;">:</span>
+                <input type="number" min="0" max="59" step="1" 
+                       value="${kf.transitionSeconds % 60}"
+                       ${!showTransition ? 'disabled' : ''}
+                       placeholder="S"
+                       title="${showTransition ? 'Sekunden' : t('mode_interpolate') + ' - nicht verwendet'}"
+                       style="width: 45px;"
+                       onchange="updateTransitionTime(${index}, this.parentElement)">
+              </div>
+            </td>
+            <td style="${!showTransition ? 'opacity: 0.3;' : ''}">
+              <select onchange="updateKeyframe(${index}, 'transitionDirection', this.value)"
+                      ${!showTransition ? 'disabled' : ''}
+                      title="${showTransition ? t('th_direction') : t('mode_interpolate') + ' - nicht verwendet'}">
+                <option value="after" ${(kf.transitionDirection || 'after') === 'after' ? 'selected' : ''}>${t('dir_after')}</option>
+                <option value="before" ${kf.transitionDirection === 'before' ? 'selected' : ''}>${t('dir_before')}</option>
+              </select>
+            </td>
+            <td>
+              <select onchange="updateKeyframe(${index}, 'curve', this.value)"
+                      ${!showCurve ? 'disabled' : ''}>
+                <option value="linear" ${kf.curve === 'linear' ? 'selected' : ''}>${t('curve_linear')}</option>
+                <option value="sinus" ${kf.curve === 'sinus' ? 'selected' : ''}>${t('curve_sinus')}</option>
+              </select>
+            </td>
+            <td>
+              <button class="small danger" onclick="deleteKeyframe(${index})">
+                ðï¸
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `
           </tbody>
         </table>
       `;
 
-      const plot = `
-        <h2>Plot (${horizonH} Stunden)</h2>
-        ${chartDataUrl ? `<img class="plot" src="${chartDataUrl}" alt="Plot">` : `<div class="muted">Plot konnte nicht eingebettet werden.</div>`}
-      `;
-
-      return `<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8" />
-  <title>Keyframe Scheduler Report</title>
-  <style>
-    :root { color-scheme: light; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 18px; color: #111; }
-    h1 { margin: 0 0 6px; font-size: 22px; }
-    h2 { margin: 18px 0 8px; font-size: 16px; }
-    .meta { font-size: 12px; color: #333; margin-bottom: 10px; }
-    ul { margin: 6px 0 0 18px; }
-    li { margin: 4px 0; font-size: 13px; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th, td { border: 1px solid #bbb; padding: 6px 8px; vertical-align: top; }
-    th { background: #f0f0f0; text-align: left; }
-    .muted { color: #666; }
-    .plot { width: 100%; max-width: 980px; border: 1px solid #bbb; border-radius: 8px; }
-    @media print {
-      body { margin: 10mm; }
-      h1, h2 { break-after: avoid; }
-      table, img { break-inside: avoid; }
-    }
-  </style>
-</head>
-<body>
-  ${intro}
-  ${table}
-  ${plot}
-</body>
-</html>`;
+      container.innerHTML = html;
+      
+      // Add drag and drop handlers
+      setupDragAndDrop();
     }
 
-    function openPdfReportAndPrint() {
-      const html = buildPdfReportHtml();
-      const w = window.open("", "_blank");
-      if (!w) {
-        alert("Popup blockiert. Bitte Popups erlauben oder über Browser-Druckdialog exportieren.");
-        return;
+    function setupDragAndDrop() {
+      const rows = document.querySelectorAll('.keyframes-table tbody tr');
+      let draggedIndex = null;
+
+      rows.forEach((row, index) => {
+        row.addEventListener('dragstart', (e) => {
+          draggedIndex = index;
+          row.style.opacity = '0.5';
+        });
+
+        row.addEventListener('dragend', (e) => {
+          row.style.opacity = '1';
+        });
+
+        row.addEventListener('dragover', (e) => {
+          e.preventDefault();
+        });
+
+        row.addEventListener('drop', (e) => {
+          e.preventDefault();
+          if (draggedIndex !== null && draggedIndex !== index) {
+            const temp = state.keyframes[draggedIndex];
+            state.keyframes.splice(draggedIndex, 1);
+            state.keyframes.splice(index, 0, temp);
+            saveState();
+            updateUI();
+          }
+        });
+      });
+    }
+
+    // ============================================================================
+    // SCHEDULER LOGIC
+    // ============================================================================
+
+    function evaluateSchedule(timeMinutes) {
+      if (state.keyframes.length === 0) {
+        return { kelvin: 4000, dim: 50, transition: 300 };
       }
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-      // Auto-open print dialog
-      w.focus();
-      setTimeout(() => {
-        try { w.print(); } catch(e) {}
-      }, 300);
+
+      // Sort by time for evaluation
+      const sorted = [...state.keyframes].sort((a, b) => parseTime(a.time) - parseTime(b.time));
+      
+      // Find relevant keyframes
+      let prevKf = null;
+      let nextKf = null;
+
+      for (let i = 0; i < sorted.length; i++) {
+        const kfTime = parseTime(sorted[i].time);
+        
+        if (kfTime <= timeMinutes) {
+          prevKf = { ...sorted[i], timeMinutes: kfTime, index: i };
+        }
+        
+        if (kfTime > timeMinutes && !nextKf) {
+          nextKf = { ...sorted[i], timeMinutes: kfTime, index: i };
+        }
+      }
+
+      // Wrap around handling
+      if (state.wrapAround) {
+        if (!prevKf) {
+          prevKf = { ...sorted[sorted.length - 1], timeMinutes: parseTime(sorted[sorted.length - 1].time) - 1440 };
+        }
+        if (!nextKf) {
+          nextKf = { ...sorted[0], timeMinutes: parseTime(sorted[0].time) + 1440 };
+        }
+      }
+
+      // No previous keyframe and no wrap
+      if (!prevKf) {
+        if (nextKf) {
+          return { 
+            kelvin: nextKf.kelvin, 
+            dim: nextKf.dim, 
+            transition: nextKf.transitionSeconds 
+          };
+        }
+        return { kelvin: 4000, dim: 50, transition: 300 };
+      }
+
+      // Handle different modes
+      if (prevKf.mode === 'instant') {
+        return { 
+          kelvin: prevKf.kelvin, 
+          dim: prevKf.dim, 
+          transition: prevKf.transitionSeconds 
+        };
+      }
+
+      if (prevKf.mode === 'transition') {
+        const direction = prevKf.transitionDirection || 'after';
+        const transitionDuration = prevKf.transitionSeconds / 60; // in minutes
+        
+        let transitionStart, transitionEnd;
+        
+        if (direction === 'before') {
+          transitionEnd = prevKf.timeMinutes;
+          transitionStart = transitionEnd - transitionDuration;
+        } else {
+          transitionStart = prevKf.timeMinutes;
+          transitionEnd = transitionStart + transitionDuration;
+        }
+        
+        if (timeMinutes >= transitionStart && timeMinutes <= transitionEnd) {
+          // During transition
+          const t = (timeMinutes - transitionStart) / (transitionEnd - transitionStart);
+          const progress = prevKf.curve === 'sinus' ? easeSinus(t) : t;
+          
+          const beforeValue = evaluateSchedule(transitionStart - 0.1);
+          
+          return {
+            kelvin: lerp(beforeValue.kelvin, prevKf.kelvin, progress),
+            dim: lerp(beforeValue.dim, prevKf.dim, progress),
+            transition: prevKf.transitionSeconds
+          };
+        }
+        
+        // After transition is complete
+        if (timeMinutes >= transitionEnd) {
+          // Check if NEXT keyframe is interpolate
+          // If yes, interpolate to it from this transition's end
+          const prevIndex = prevKf.index;
+          
+          // Find next interpolate keyframe
+          let nextInterpolateKf = null;
+          let nextInterpolateTime = null;
+          
+          for (let i = prevIndex + 1; i < sorted.length; i++) {
+            if (sorted[i].mode === 'interpolate') {
+              nextInterpolateKf = sorted[i];
+              nextInterpolateTime = parseTime(nextInterpolateKf.time);
+              break;
+            }
+          }
+          
+          // Wrap-around
+          if (!nextInterpolateKf && state.wrapAround) {
+            for (let i = 0; i < prevIndex; i++) {
+              if (sorted[i].mode === 'interpolate') {
+                nextInterpolateKf = sorted[i];
+                nextInterpolateTime = parseTime(nextInterpolateKf.time) + 1440;
+                break;
+              }
+            }
+          }
+          
+          // If next is interpolate, interpolate to it
+          if (nextInterpolateKf && timeMinutes < nextInterpolateTime) {
+            const startTime = transitionEnd;
+            const endTime = nextInterpolateTime;
+            const duration = endTime - startTime;
+            const elapsed = timeMinutes - startTime;
+            const t = clamp(elapsed / duration, 0, 1);
+            const progress = prevKf.curve === 'sinus' ? easeSinus(t) : t;
+            
+            return {
+              kelvin: lerp(prevKf.kelvin, nextInterpolateKf.kelvin, progress),
+              dim: lerp(prevKf.dim, nextInterpolateKf.dim, progress),
+              transition: state.stepMinutes * 60
+            };
+          }
+          
+          // No next interpolate or already past it - hold value
+          return { 
+            kelvin: prevKf.kelvin, 
+            dim: prevKf.dim, 
+            transition: prevKf.transitionSeconds 
+          };
+        }
+      }
+
+      if (prevKf.mode === 'interpolate') {
+        // Interpolate: defines TARGET value at TARGET time
+        // Interpolates from previous keyframe to THIS keyframe
+        // THEN checks if next is also interpolate to continue
+        
+        const prevIndex = prevKf.index;
+        
+        // PART 1: Are we BEFORE this keyframe? Interpolate TO it
+        if (timeMinutes < prevKf.timeMinutes) {
+          // Find interpolation START point
+          let startTime = 0;
+          let startKelvin = prevKf.kelvin;
+          let startDim = prevKf.dim;
+          
+          if (prevIndex > 0) {
+            const beforeKf = sorted[prevIndex - 1];
+            const beforeTime = parseTime(beforeKf.time);
+            
+            startKelvin = beforeKf.kelvin;
+            startDim = beforeKf.dim;
+            
+            // If previous was transition, start after it ends
+            if (beforeKf.mode === 'transition') {
+              const transDuration = beforeKf.transitionSeconds / 60;
+              const direction = beforeKf.transitionDirection || 'after';
+              
+              if (direction === 'after') {
+                startTime = beforeTime + transDuration;
+              } else {
+                startTime = beforeTime;
+              }
+            } else {
+              startTime = beforeTime;
+            }
+          }
+          
+          // Interpolate to THIS keyframe
+          const endTime = prevKf.timeMinutes;
+          const duration = endTime - startTime;
+          
+          if (duration <= 0) {
+            return {
+              kelvin: prevKf.kelvin,
+              dim: prevKf.dim,
+              transition: state.stepMinutes * 60
+            };
+          }
+          
+          const elapsed = timeMinutes - startTime;
+          const t = clamp(elapsed / duration, 0, 1);
+          const progress = prevKf.curve === 'sinus' ? easeSinus(t) : t;
+          
+          return {
+            kelvin: lerp(startKelvin, prevKf.kelvin, progress),
+            dim: lerp(startDim, prevKf.dim, progress),
+            transition: state.stepMinutes * 60
+          };
+        }
+        
+        // PART 2: We're AT or AFTER this keyframe
+        // Check if NEXT keyframe is also interpolate
+        if (!nextKf) {
+          // No next keyframe - hold
+          return {
+            kelvin: prevKf.kelvin,
+            dim: prevKf.dim,
+            transition: prevKf.transitionSeconds
+          };
+        }
+        
+        // If next is NOT interpolate, hold until next keyframe
+        if (nextKf.mode !== 'interpolate') {
+          return {
+            kelvin: prevKf.kelvin,
+            dim: prevKf.dim,
+            transition: prevKf.transitionSeconds
+          };
+        }
+        
+        // PART 3: Next is ALSO interpolate - continue interpolating
+        const nextInterpolateTime = nextKf.timeMinutes;
+        
+        // Check for transitions/instants BETWEEN this and next
+        let startTime = prevKf.timeMinutes;
+        let startKelvin = prevKf.kelvin;
+        let startDim = prevKf.dim;
+        
+        for (let i = prevIndex + 1; i < sorted.length; i++) {
+          const kf = sorted[i];
+          const kfTime = parseTime(kf.time);
+          
+          if (kfTime >= nextInterpolateTime) break;
+          
+          if (kf.mode === 'transition') {
+            const transDuration = kf.transitionSeconds / 60;
+            const direction = kf.transitionDirection || 'after';
+            
+            if (direction === 'after') {
+              startTime = kfTime + transDuration;
+            } else {
+              startTime = kfTime;
+            }
+            startKelvin = kf.kelvin;
+            startDim = kf.dim;
+          } else if (kf.mode === 'instant') {
+            startTime = kfTime;
+            startKelvin = kf.kelvin;
+            startDim = kf.dim;
+          }
+        }
+        
+        // Interpolate to next interpolate keyframe
+        const endTime = nextInterpolateTime;
+        
+        if (timeMinutes < startTime) {
+          return {
+            kelvin: startKelvin,
+            dim: startDim,
+            transition: state.stepMinutes * 60
+          };
+        }
+        
+        if (timeMinutes >= endTime) {
+          return {
+            kelvin: nextKf.kelvin,
+            dim: nextKf.dim,
+            transition: state.stepMinutes * 60
+          };
+        }
+        
+        // During interpolation to next
+        const duration = endTime - startTime;
+        const elapsed = timeMinutes - startTime;
+        const t = clamp(elapsed / duration, 0, 1);
+        const progress = nextKf.curve === 'sinus' ? easeSinus(t) : t;
+        
+        return {
+          kelvin: lerp(startKelvin, nextKf.kelvin, progress),
+          dim: lerp(startDim, nextKf.dim, progress),
+          transition: state.stepMinutes * 60
+        };
+      }
+
+      return { 
+        kelvin: prevKf.kelvin, 
+        dim: prevKf.dim, 
+        transition: prevKf.transitionSeconds 
+      };
     }
 
-    document.getElementById('pdfBtn')?.addEventListener('click', openPdfReportAndPrint);
+    // ============================================================================
+    // CHART
+    // ============================================================================
 
-</script>
+    let chart = null;
+
+    function renderChart() {
+      const canvas = document.getElementById('chart');
+      const ctx = canvas.getContext('2d');
+
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const stepMinutes = Math.max(1, state.stepMinutes);
+      const horizonMinutes = state.horizonHours * 60;
+      
+      // IMPORTANT: Chart uses higher resolution for visualization
+      // User's stepMinutes is for HA update frequency, NOT chart resolution
+      // Use 0.5 min (30 sec) for smooth chart, regardless of stepMinutes setting
+      const chartStepMinutes = 0.5;
+      const steps = Math.ceil(horizonMinutes / chartStepMinutes);
+
+      const labels = [];
+      const kelvinData = [];
+      const dimData = [];
+      const transitionData = [];
+      const timeData = []; // Store actual time objects for tooltips
+      
+      // For normalized display (0-100%)
+      const kelvinNormalizedData = [];
+      const dimNormalizedData = [];
+
+      // Calculate label frequency based on horizon
+      // For 24h: show every 2 hours, for 48h: every 4 hours, for 72h: every 6 hours
+      const labelInterval = state.horizonHours <= 24 ? 120 : state.horizonHours <= 48 ? 240 : 360;
+
+      for (let i = 0; i <= steps; i++) {
+        const minutes = i * chartStepMinutes;
+        const time = new Date(startOfDay.getTime() + minutes * 60000);
+        timeData.push(time);
+        
+        // Show label at calculated intervals
+        const showLabel = minutes % labelInterval === 0;
+        labels.push(showLabel ? time.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '');
+
+        const timeOfDay = (time.getHours() * 60 + time.getMinutes()) % 1440;
+        const values = evaluateSchedule(timeOfDay);
+        
+        kelvinData.push(values.kelvin);
+        dimData.push(values.dim);
+        transitionData.push(values.transition);
+        
+        // Normalize Kelvin: 2000-6500 â 0-100%
+        const kelvinNormalized = ((values.kelvin - 2000) / (6500 - 2000)) * 100;
+        kelvinNormalizedData.push(kelvinNormalized);
+        
+        // Dim is already 0-100%
+        dimNormalizedData.push(values.dim);
+      }
+
+      if (chart) {
+        chart.destroy();
+      }
+
+      // Store these for grid callback
+      const gridConfig = {
+        chartStepMinutes: chartStepMinutes,
+        labelInterval: labelInterval
+      };
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: t('chart_brightness'),
+              data: dimNormalizedData,
+              borderColor: '#2196F3',
+              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+              yAxisID: 'y',
+              tension: 0  // No smoothing - show actual data points
+            },
+            {
+              label: t('chart_kelvin'),
+              data: kelvinNormalizedData,
+              borderColor: '#FF9800',
+              backgroundColor: 'rgba(255, 152, 0, 0.1)',
+              yAxisID: 'y1',
+              tension: 0  // No smoothing - show actual data points
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: 'top'
+            },
+            tooltip: {
+              callbacks: {
+                title: function(context) {
+                  // Show exact time for the data point
+                  const index = context[0].dataIndex;
+                  const time = timeData[index];
+                  return time.toLocaleString('de-DE', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit'
+                  });
+                },
+                label: function(context) {
+                  const index = context.dataIndex;
+                  const datasetIndex = context.datasetIndex;
+                  
+                  if (datasetIndex === 0) {
+                    // Dim dataset
+                    return `Helligkeit: ${dimData[index].toFixed(1)}%`;
+                  } else {
+                    // Kelvin dataset
+                    return `Kelvin: ${Math.round(kelvinData[index])} K`;
+                  }
+                },
+                afterBody: function(context) {
+                  // Show transition time
+                  const index = context[0].dataIndex;
+                  return [``, `Transition: ${transitionData[index]}s`];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 0,
+                minRotation: 0,
+                autoSkip: false,
+                font: {
+                  size: 11
+                }
+              },
+              grid: {
+                display: true,
+                color: function(context) {
+                  // Grid lines at label intervals
+                  const index = context.index;
+                  const minutes = index * gridConfig.chartStepMinutes;
+                  if (minutes % gridConfig.labelInterval === 0) {
+                    return 'rgba(0, 0, 0, 0.15)';
+                  }
+                  return 'rgba(0, 0, 0, 0)'; // Hide other grid lines
+                }
+              }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Helligkeit %'
+              },
+              min: 0,
+              max: 100
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Kelvin (normalisiert)'
+              },
+              min: 0,
+              max: 100,
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          }
+        }
+      });
+
+      // Update stats
+      updateStats(kelvinData, dimData, transitionData);
+    }
+
+    function updateStats(kelvinData, dimData, transitionData) {
+      const avgKelvin = Math.round(kelvinData.reduce((a, b) => a + b, 0) / kelvinData.length);
+      const avgDim = Math.round(dimData.reduce((a, b) => a + b, 0) / dimData.length);
+      const avgTransition = Math.round(transitionData.reduce((a, b) => a + b, 0) / transitionData.length);
+
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-item">
+          <span class="stat-label">Keyframes:</span>
+          <span>${state.keyframes.length}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Ã Kelvin:</span>
+          <span>${avgKelvin} K</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Ã Helligkeit:</span>
+          <span>${avgDim}%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Ã Transition:</span>
+          <span>${avgTransition}s</span>
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // EXPORT / IMPORT
+    // ============================================================================
+
+    function generateHaJson() {
+      return {
+        version: 1,
+        name: state.scheduleName || 'My Schedule',  // Metadata: WebApp verwendet es fÃ¼r Dateinamen/Titel
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Berlin",
+        stepMinutes: state.stepMinutes,
+        horizonHours: state.horizonHours,
+        wrapAround: state.wrapAround,
+        startDateTime: null,
+        keyframes: state.keyframes.map(kf => {
+          return {
+            time: kf.time,
+            kelvin: kf.kelvin,
+            dim: kf.dim,
+            mode: kf.mode,
+            curve: kf.curve,
+            transitionSeconds: kf.transitionSeconds,
+            transitionDirection: kf.transitionDirection || 'after'
+          };
+        })
+      };
+    }
+
+    function updateJsonOutput() {
+      const json = generateHaJson();
+      document.getElementById('jsonOutput').value = JSON.stringify(json, null, 2);
+    }
+
+    function downloadJson() {
+      const json = JSON.stringify(generateHaJson(), null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Use schedule name for filename (sanitized)
+      const safeName = (state.scheduleName || 'My Schedule')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      a.download = `${safeName}-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadCsv() {
+      // Generate CSV with schedule values
+      const stepMinutes = Math.max(1, state.stepMinutes);
+      const horizonMinutes = state.horizonHours * 60;
+      const chartStepMinutes = 0.5; // 30 second resolution
+      const steps = Math.ceil(horizonMinutes / chartStepMinutes);
+      
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // CSV Header
+      let csv = 'Zeit,Kelvin,Helligkeit %,Transition (s)\n';
+      
+      // Generate data points
+      for (let i = 0; i <= steps; i++) {
+        const minutes = i * chartStepMinutes;
+        const time = new Date(startOfDay.getTime() + minutes * 60000);
+        const timeStr = time.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const timeOfDay = (time.getHours() * 60 + time.getMinutes() + time.getSeconds() / 60) % 1440;
+        const values = evaluateSchedule(timeOfDay);
+        
+        csv += `${timeStr},${Math.round(values.kelvin)},${Math.round(values.dim)},${values.transition}\n`;
+      }
+      
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `keyframe-schedule-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadPdf() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      let yPos = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      
+      // Title
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      // Use schedule name as title
+      doc.text(state.scheduleName || t('pdf_title'), margin, yPos);
+      yPos += 10;
+      
+      // Date
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      const locale = currentLang === 'de' ? 'de-DE' : currentLang === 'es' ? 'es-ES' : 'en-US';
+      doc.text(`${t('pdf_created')} ${new Date().toLocaleDateString(locale)}`, margin, yPos);
+      yPos += 15;
+      
+      // Keyframes Table
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(t('pdf_keyframes_title'), margin, yPos);
+      yPos += 5;
+      
+      const tableData = state.keyframes.map(kf => {
+        const hours = Math.floor(kf.transitionSeconds / 3600);
+        const mins = Math.floor((kf.transitionSeconds % 3600) / 60);
+        const secs = kf.transitionSeconds % 60;
+        const transStr = `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        // Bei Interpolate: Transition-Werte ausgrauen/ausblenden
+        const showTransition = kf.mode === 'transition';
+        const transDisplay = showTransition ? transStr : '-';
+        const curveDisplay = (kf.mode === 'interpolate' || kf.mode === 'transition') ? 
+                             (kf.curve === 'sinus' ? t('curve_sinus') : t('curve_linear')) : 
+                             '-';
+        
+        return [
+          kf.time,
+          `${kf.kelvin}K`,
+          `${kf.dim}%`,
+          kf.mode === 'instant' ? t('mode_instant') : kf.mode === 'transition' ? t('mode_transition') : t('mode_interpolate'),
+          transDisplay,
+          curveDisplay
+        ];
+      });
+      
+      doc.autoTable({
+        startY: yPos,
+        head: [[t('pdf_time'), t('pdf_kelvin'), t('pdf_brightness'), t('pdf_mode'), t('pdf_transition'), t('pdf_curve')]],
+        body: tableData,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [33, 150, 243], fontStyle: 'bold' },
+        theme: 'striped'
+      });
+      
+      yPos = doc.lastAutoTable.finalY + 15;
+      
+      // Chart
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(t('pdf_preview'), margin, yPos);
+      yPos += 5;
+      
+      // Get chart as image
+      const canvas = document.getElementById('chart');
+      const chartImg = canvas.toDataURL('image/png');
+      const chartWidth = pageWidth - 2 * margin;
+      const chartHeight = (chartWidth / canvas.width) * canvas.height;
+      
+      if (yPos + chartHeight > doc.internal.pageSize.getHeight() - 20) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.addImage(chartImg, 'PNG', margin, yPos, chartWidth, chartHeight);
+      yPos += chartHeight + 15;
+      
+      // Explanations
+      doc.addPage();
+      yPos = 20;
+      
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(t('pdf_explanations'), margin, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      const explanations = [
+        { title: t('pdf_instant_title'), text: t('pdf_instant_desc') },
+        { title: t('pdf_transition_title'), text: t('pdf_transition_desc') },
+        { title: t('pdf_interpolate_title'), text: t('pdf_interpolate_desc') },
+        { title: '', text: '' },
+        { title: t('pdf_curves_title'), text: '' },
+        { title: t('pdf_linear_title'), text: t('pdf_linear_desc') },
+        { title: t('pdf_sinus_title'), text: t('pdf_sinus_desc') },
+        { title: '', text: '' },
+        { title: t('pdf_transition_time_title'), text: '' },
+        { title: t('mode_interpolate'), text: t('pdf_interpolate_time_desc') },
+        { title: `${t('mode_transition')}/${t('mode_instant')}`, text: t('pdf_transition_any_desc') }
+      ];
+      
+      explanations.forEach(exp => {
+        if (exp.title === '' && exp.text === '') {
+          yPos += 5;
+          return;
+        }
+        
+        if (exp.title && !exp.text) {
+          doc.setFont(undefined, 'bold');
+          doc.text(exp.title, margin, yPos);
+          doc.setFont(undefined, 'normal');
+          yPos += 7;
+          return;
+        }
+        
+        if (exp.title) {
+          doc.setFont(undefined, 'bold');
+          doc.text(exp.title + ':', margin, yPos);
+          doc.setFont(undefined, 'normal');
+          yPos += 5;
+        }
+        
+        const lines = doc.splitTextToSize(exp.text, pageWidth - 2 * margin - 5);
+        lines.forEach(line => {
+          if (yPos > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(line, margin + (exp.title ? 5 : 0), yPos);
+          yPos += 5;
+        });
+        
+        yPos += 3;
+      });
+      
+      // Save
+      // Use schedule name for filename (sanitized)
+      const safeName = (state.scheduleName || 'My Schedule')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      doc.save(`${safeName}-${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+
+    function importJson() {
+      document.getElementById('fileInput').click();
+    }
+
+    function loadFileTop() {
+      document.getElementById('fileInputTop').click();
+    }
+
+    function handleFileImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const json = JSON.parse(e.target.result);
+          
+          if (json.version === 1 && json.keyframes) {
+            state.scheduleName = json.name || 'My Schedule';  // Load name from JSON
+            state.stepMinutes = json.stepMinutes || 5;
+            state.horizonHours = json.horizonHours || 48;
+            state.wrapAround = json.wrapAround !== false;
+            state.keyframes = json.keyframes.map(kf => {
+              return {
+                time: kf.time,
+                kelvin: kf.kelvin,
+                dim: kf.dim,
+                mode: kf.mode || 'instant',
+                curve: kf.curve || 'linear',
+                transitionSeconds: kf.transitionSeconds || 300,
+                transitionDirection: kf.transitionDirection || 'after'
+              };
+            });
+            
+            saveState();
+            updateUI();
+            alert('â Zeitplan erfolgreich importiert!');
+          } else {
+            alert('â UngÃ¼ltiges JSON-Format');
+          }
+        } catch (err) {
+          console.error('Import error:', err);
+          alert('â Fehler beim Importieren der Datei');
+        }
+      };
+      reader.readAsText(file);
+      
+      // Reset file input
+      event.target.value = '';
+    }
+
+    function importFromText() {
+      try {
+        const json = JSON.parse(document.getElementById('jsonOutput').value);
+        
+        if (json.version === 1 && json.keyframes) {
+          state.stepMinutes = json.stepMinutes || 5;
+          state.horizonHours = json.horizonHours || 48;
+          state.wrapAround = json.wrapAround !== false;
+          state.keyframes = json.keyframes.map(kf => {
+            return {
+              time: kf.time,
+              kelvin: kf.kelvin,
+              dim: kf.dim,
+              mode: kf.mode || 'instant',
+              curve: kf.curve || 'linear',
+              transitionSeconds: kf.transitionSeconds || 300,
+              transitionDirection: kf.transitionDirection || 'after'
+            };
+          });
+          
+          saveState();
+          updateUI();
+          alert('â JSON erfolgreich Ã¼bernommen!');
+        } else {
+          alert('â UngÃ¼ltiges JSON-Format');
+        }
+      } catch (err) {
+        console.error('Import error:', err);
+        alert('â UngÃ¼ltiges JSON');
+      }
+    }
+
+    // ============================================================================
+    // EVENT LISTENERS
+    // ============================================================================
+
+    document.getElementById('stepMinutes').addEventListener('change', (e) => {
+      state.stepMinutes = Math.max(1, Math.min(60, parseInt(e.target.value) || 5));
+      saveState();
+      renderChart();
+      updateJsonOutput();
+    });
+
+    document.getElementById('horizonHours').addEventListener('change', (e) => {
+      state.horizonHours = parseInt(e.target.value);
+      saveState();
+      renderChart();
+      updateJsonOutput();
+    });
+
+    document.getElementById('wrapAround').addEventListener('change', (e) => {
+      state.wrapAround = e.target.value === 'true';
+      saveState();
+      renderChart();
+      updateJsonOutput();
+    });
+
+    document.getElementById('addKeyframeBtn').addEventListener('click', addKeyframe);
+    document.getElementById('sortByTimeBtn').addEventListener('click', sortKeyframesByTime);
+    document.getElementById('loadPresetBtn').addEventListener('click', () => loadPreset('example'));
+    document.getElementById('loadFileBtn').addEventListener('click', loadFileTop);
+    document.getElementById('fileInputTop').addEventListener('change', handleFileImport);
+    document.getElementById('downloadJsonBtn').addEventListener('click', downloadJson);
+    document.getElementById('downloadPdfBtn').addEventListener('click', downloadPdf);
+    document.getElementById('downloadCsvBtn').addEventListener('click', downloadCsv);
+    document.getElementById('importFromTextBtn').addEventListener('click', importFromText);
+
+    // ============================================================================
+    // INITIALIZATION
+    // ============================================================================
+
+    loadState();
+    setLanguage(currentLang);  // Initialize i18n
+  </script>
 </body>
 </html>
