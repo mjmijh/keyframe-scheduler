@@ -123,9 +123,10 @@ trigger:
     id: light_changed
 
   # Trigger 4: Follow switch turned ON → sync to schedule
-  - platform: state
-    entity_id: !input follow_switch
-    to: "on"
+  # Template trigger (not state) so the blueprint stays valid when
+  # follow_switch is left empty — state triggers reject empty entity_ids.
+  - platform: template
+    value_template: "{{ has_follow and is_state(follow_id, 'on') }}"
     id: follow_enabled
 
   # Trigger 5: Periodic check for auto-resume (every minute)
